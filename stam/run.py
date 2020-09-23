@@ -1,11 +1,11 @@
 import os
 import time
 import numpy as np
-from christmass.utils import get_config, init_log, close_log
-from christmass.gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction
-from christmass.models import read_parsec
-from christmass.tracks import get_combined_isomasses
-from christmass.assign import assign_param
+from stam.utils import get_config, init_log, close_log
+from stam.gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction
+from stam.models import read_parsec
+from stam.tracks import get_combined_isomasses
+from stam.assign import assign_param
 
 
 def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):

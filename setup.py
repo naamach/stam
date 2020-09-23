@@ -1,13 +1,13 @@
 from distutils.core import setup
 import setuptools
 
-setup(name='christmass',
+setup(name='stam',
       version='0.1.0',
       author="Na'ama Hallakoun",
       author_email='naama.hallakoun@weizmann.ac.il',
-      description='Assign stellar mass and metallicity based on HR-diagram location',
+      description='Stellar-Track-based Assignment of Mass',
       long_description=open('README.md').read(),
-      url='https://github.com/naamach/christmass',
+      url='https://github.com/naamach/stam',
       license='LICENSE.txt',
       packages=setuptools.find_packages(),
       install_requires=['astropy', 'configparser', 'numpy', 'scipy', 'tqdm'],

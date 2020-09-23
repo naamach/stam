@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from astropy.table import Table
-from christmass.models import colname
+from stam.models import colname
 
 
 def get_isotrack(models, vals, params=("mass", "mh"),

@@ -1,7 +1,7 @@
 import time
 from tqdm import tqdm
 import numpy as np
-from christmass.interp import triangulate_tracks, interpolate_tracks
+from stam.interp import triangulate_tracks, interpolate_tracks
 
 
 def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass"):

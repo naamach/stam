@@ -1,6 +1,6 @@
-# CHRISTMASS
+# STAM
 
-Convert Hertzsprung-Russell diagram ISochrone position To MASS (CHRISTMASS).
+Stellar-Track-based Assignment of Mass (STAM).
 
 ## Getting started
 
@@ -17,28 +17,28 @@ Convert Hertzsprung-Russell diagram ISochrone position To MASS (CHRISTMASS).
 
 Create and activate a `conda` environment with the necessary modules:
 ```
-$ conda create -n christmass astropy configparser numpy scipy python=3.7.1
-$ source activate christmass
+$ conda create -n stam astropy configparser numpy scipy python=3.7.1
+$ source activate stam
 ```
-Install the `christmass` package:
+Install the `stam` package:
 ```
-$ pip install git+https://github.com/naamach/christmass.git
+$ pip install git+https://github.com/naamach/stam.git
 ```
 
 ### Upgrading
-To upgrade `christmass` run:
+To upgrade `stam` run:
 ```
-$ pip install git+https://github.com/naamach/christmass.git --upgrade
+$ pip install git+https://github.com/naamach/stam.git --upgrade
 ```
 
-## Using `christmass`
+## Using `stam`
 
 ### Download the PARSEC models
 First, you need to download some stellar evolution tracks, that will be used to estimate the stellar parameters.
 You can download the PARSEC isochrones from [here](http://stev.oapd.inaf.it/cgi-bin/cmd).
 You might need to download the table iteratively, in case your query exceeds 400 rows.
 Save all the resulting `*.dat` files into a single folder.
-`christmass` will concatenate all the `*.dat` files in that folder into a single table.
+`stam` will concatenate all the `*.dat` files in that folder into a single table.
 
 ### Download the Gaia data
 You can query the Gaia DR2 database directly from the [Gaia Archive](https://gea.esac.esa.int/archive/),
@@ -46,7 +46,7 @@ or any other method of your preference. Save the resulting table in `*.FITS` for
 
 ### Prepare the configuration file
 
-You will have to provide `christmass` with a `config.ini` file in the working directory (the directory from which you run the script).
+You will have to provide `stam` with a `config.ini` file in the working directory (the directory from which you run the script).
 The file should look like that (see `config.ini.example` in the main directory):
 
 ```
@@ -87,12 +87,12 @@ N_REALIZATIONS = 10 ; number of realizations
 N_REALIZATIONS = 10 ; number of realizations
 ```
 
-### Running `christmass`
+### Running `stam`
 
 To assign mass and metallicities to all the Gaia sources in your Gaia data file, run in `python`:
 
 ```
-from christmass.run import  get_mass_and_metallicity
+from stam.run import  get_mass_and_metallicity
 
 m_mean, m_error, mh_mean, mh_error = get_mass_and_metallicity()
 ```

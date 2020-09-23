@@ -1,7 +1,7 @@
 import glob
 from astropy.io import ascii
 from astropy.table import vstack
-from christmass.utils import get_config
+from stam.utils import get_config
 
 
 def read_parsec(files=None, path=None, config_file="config.ini"):
