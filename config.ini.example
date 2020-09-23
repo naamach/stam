@@ -1,0 +1,35 @@
+; config.ini
+[LOG]
+PATH = /path/to/log/file/
+CONSOLE_LEVEL = INFO ; DEBUG, INFO, WARNING, ERROR, CRITICAL
+FILE_LEVEL = DEBUG ; DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+[GENERAL]
+SAVE = TRUE ; save results to file?
+PATH = /path/to/working/directory/ ; result file destination path
+OUTPUT_TYPE = csv ; npy, csv
+CSV_FORMAT = .8f ; CSV format (without "%")
+
+[GAIA]
+PATH = /path/to/gaia/files/ ; path to Gaia data folder
+FILE = GaiaFileName.fits ; Gaia data file name (only works for FITS files)
+CORRECT_EXTINCTION = TRUE ; correct Gaia data for extinction?
+
+[MODELS]
+SOURCE = PARSEC ; which isochrone models to use?
+M_MIN = 0.15 ; [Msun] minimum track mass
+M_MAX = 1 ; [Msun] maximum track mass
+M_STEP = 0.05 ; [Msun] track mass step
+AGE = 5 ; [Gyr] age of the MS tracks
+MH_PRE_MS = 0.7 ; pre-MS track [M/H]
+SMOOTH = True ; smooth track?
+SMOOTH_SIGMA = 3 ; Gaussian smoothing sigma
+
+[PARSEC]
+PATH = /path/to/PARSEC/files/ ; path to the PARSEC *.dat tables (concatenates all *.dat files in the folder to a single table)
+
+[MASS]
+N_REALIZATIONS = 10 ; number of realizations
+
+[MH]
+N_REALIZATIONS = 10 ; number of realizations
