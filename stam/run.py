@@ -9,6 +9,32 @@ from stam.assign import assign_param
 
 
 def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
+    """
+    get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini")
+
+    Estimate mass and metallicity for all the stars in the Gaia table.
+
+    Parameters
+    ----------
+    idx : None or array_like, optional
+        Gaia table row indices to use, `None` to select all rows (default: None).
+    suffix : None or str, optional
+        Customized suffix to add to the output file names (default: None).
+    config_file : str, optional
+        The configuration file name, including path (default: "config.ini").
+
+    Returns
+    -------
+    m_mean : array_like
+        Estimated mass mean for each of stars.
+    m_error : array_like
+        Estimated mass standard deviation for each of stars.
+    mh_mean : array_like
+        Estimated metallicity mean for each of stars.
+    mh_error : array_like
+        Estimated metallicity standard deviation for each of stars.
+    """
+
     config = get_config(config_file)
     log = init_log(time.strftime("%Y%m%d_%H%M%S", time.gmtime()), config_file)
 

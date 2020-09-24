@@ -8,6 +8,63 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf):
+    """
+    get_isotrack(models, vals, params=("mass", "mh"),
+                 mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
+                 mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
+                 stage_min=0, stage_max=np.inf)
+
+    Get a specific stellar evolution track, with two out of three parameters fixed (mass, age, or metallicity).
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    vals : array_like (of length 2)
+        Values of the fixed parameters (units: [mass] = Msun, [age] = Gyr, [mh] = dex).
+    params : tuple (of length 2), optional
+        Fixed parameters names (default: ("mass", "mh")).
+    mass_res : float, optional
+        Mass resolution, in Msun (default: 0.007 Msun)
+    age_res : float, optional
+        Age resolution, in Gyr (default: 0.1 Gyr)
+    mh_res : float, optional
+        Metallicity resolution, in dex (default: 0.05 dex)
+    stage : int, optional
+        Stellar evolution stage label (0 = pre-MS, 1 = MS, etc.; default: 1).
+    mass_min : float, optional
+        Minimum mass to consider, in Msun (if no fixed mass was chosen; default: 0 Msun).
+    mass_max : float, optional
+        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1 Msun).
+    age_min : float, optional
+        Minimum age to consider, in Gyr (if no fixed age was chosen; default: 0 Gyr).
+    age_max : float, optional
+        Maximum age to consider, in Gyr (if no fixed age was chosen; default: `np.inf` Gyr).
+    mh_min : float, optional
+        Minimum [M/H] to consider, in dex (if no fixed metallicity was chosen; default: `-np.inf`).
+    mh_max : float, optional
+        Maximum [M/H] to consider, in dex (if no fixed metallicity was chosen; default: `np.inf`).
+    stage_min : int, optional
+        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).
+    stage_max : int, optional
+        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).
+
+    Returns
+    -------
+    bp : array_like
+        Chosen stellar evolution track Gaia Gbp magnitude
+    rp : array_like
+        Chosen stellar evolution track Gaia Grp magnitude
+    g : array_like
+        Chosen stellar evolution track Gaia G magnitude
+    mass : array_like
+        Chosen stellar evolution track mass, in Msun
+    mh : array_like
+        Chosen stellar evolution track metallicity ([M/H]), in dex
+    age : array_like
+        Chosen stellar evolution track age, in Gyr
+    """
+
     if "mass" in params:
         mass = vals[params.index("mass")]
         mass_idx = ((mass - mass_res) <= models[colname("m0")]) & (models[colname("m0")] < (mass + mass_res))
@@ -54,6 +111,36 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
 
 def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs):
+    """
+    get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs)
+
+    Get a specific stellar evolution pre-MS track, with fixed mass and metallicity.
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    mass : float
+        Stellar track mass, in Msun
+    mh : float
+        Stellar track metallicity ([M/H]), in dex
+    is_smooth : bool, optional
+        Smooth the stellar track? (default: True).
+    smooth_sigma : float, optional
+        Smoothing Gaussian sigma (default: 3).
+    kwargs : optional
+        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.
+
+    Returns
+    -------
+    bp_rp : array_like
+        Chosen stellar evolution track Gaia Gbp-Grp color.
+    mg : array_like
+        Chosen stellar evolution track Gaia G magnitude.
+    age : array_like
+        Chosen stellar evolution track age, in Gyr.
+    """
+
     bp, rp, g, _, _, age = get_isotrack(models, [mass, mh], params=("mass", "mh"), stage=0, **kwargs)
 
     if is_smooth:
@@ -76,6 +163,43 @@ def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwarg
 
 
 def get_combined_isomass(models, mass, age, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3, **kwargs):
+    """
+    get_combined_isomass(models, mass, age, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3, **kwargs)
+
+    Get a specific stellar evolution track, combining a pre-MS track with fixed mass and metallicity, and an MS track
+    with fixed mass and age.
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    mass : float
+        Stellar track mass, in Msun.
+    age : float
+        MS stellar track age, in Gyr.
+    mh_pre_ms : float, optional
+        Pre-MS stellar track metallicity ([M/H]), in dex (default: 0.7 dex).
+    is_smooth : bool, optional
+        Smooth the stellar track? (default: True).
+    smooth_sigma : float, optional
+        Smoothing Gaussian sigma (default: 3).
+    kwargs : optional
+        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.
+
+    Returns
+    -------
+    bp_rp : array_like
+        Chosen stellar evolution track Gaia Gbp-Grp color.
+    mg : array_like
+        Chosen stellar evolution track Gaia G magnitude.
+    mh : array_like
+        Chosen stellar evolution track metallicity, in dex.
+    age_vec : array_like
+        Chosen stellar evolution track age, in Gyr.
+    ms_idx : array_like (bool)
+        Indices of MS points on track.
+    """
+
     # get MS track (fixed mass and age)
     bp, rp, g, _, mh, _ = get_isotrack(models, [mass, age], params=("mass", "age"), stage=1, **kwargs)
 
@@ -106,6 +230,29 @@ def get_combined_isomass(models, mass, age, mh_pre_ms=0.7, is_smooth=True, smoot
 
 
 def get_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, **kwargs):
+    """
+    get_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, **kwargs)
+
+    Get fixed-age stellar evolution tracks, for a range of masses.
+    If the `stage` keyword is not specified (under `kwargs`), it assumes `stage=1` (MS phase).
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    mass : array_like, optional
+        Stellar track mass array, in Msun (default: `np.arange(0.1, 1.2, 0.1)` Msun).
+    age : float, optional
+        Stellar track age, in Gyr (default: 5 Gyr).
+    kwargs : optional
+        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.
+
+    Returns
+    -------
+    tracks : Table
+        Stellar evolution tracks, for the given age and range of masses, with columns `mass`, `bp_rp`, `mg`, and `mh`.
+    """
+
     m_vec = np.array([])
     bp_rp = np.array([])
     mg = np.array([])
@@ -124,6 +271,37 @@ def get_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, **kwargs):
 
 def get_combined_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3,
                            **kwargs):
+    """
+    get_combined_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3,
+                           **kwargs)
+
+    Get combined stellar evolution tracks, for a range of masses. Each track combines a pre-MS track with fixed mass
+    and metallicity, and an MS track with fixed mass and age.
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    mass : array_like, optional
+        Stellar track mass array, in Msun (default: `np.arange(0.1, 1.2, 0.1)` Msun).
+    age : float, optional
+        Stellar track age, in Gyr (default: 5 Gyr).
+    mh_pre_ms : float, optional
+        Pre-MS stellar track metallicity ([M/H]), in dex (default: 0.7 dex).
+    is_smooth : bool, optional
+        Smooth the stellar track? (default: True).
+    smooth_sigma : float, optional
+        Smoothing Gaussian sigma (default: 3).
+    kwargs : optional
+        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.
+
+    Returns
+    -------
+    tracks : Table
+        Stellar evolution tracks, for the given age and range of masses, with columns `mass`, `bp_rp`, `mg`, and `mh`.
+
+    """
+
     m_vec = np.array([])
     bp_rp = np.array([])
     mg = np.array([])

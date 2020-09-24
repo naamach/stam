@@ -4,12 +4,45 @@ import os
 
 
 def get_config(config_file="config.ini"):
+    """
+    get_config(config_file="config.ini")
+
+    Read configuration file.
+
+    Parameters
+    ----------
+    config_file : str, optional
+        The configuration file name, including path (default: "config.ini").
+
+    Returns
+    -------
+    config : A ConfigParser object.
+    """
+
     config = ConfigParser(inline_comment_prefixes=';')
     config.read(config_file)
     return config
 
 
 def init_log(filename="log.log", config_file="config.ini"):
+    """
+    init_log(filename="log.log", config_file="config.ini")
+
+    Initialize logger.
+
+    Parameters
+    ----------
+    filename : str, optional
+        Log file name.
+    config_file : str, optional
+        The configuration file name, including path (default: "config.ini").
+
+    Returns
+    -------
+    log
+        Logger object.
+    """
+
     config = get_config(config_file)
     log_path = config.get('LOG', 'PATH')  # log file path
     console_log_level = config.get('LOG', 'CONSOLE_LEVEL')  # logging level
@@ -41,6 +74,19 @@ def init_log(filename="log.log", config_file="config.ini"):
 
 
 def close_log(log):
+    """
+    close_log(log)
+
+    Close logger.
+
+    Parameters
+    ----------
+    log : Logger object
+
+    Returns
+    -------
+
+    """
     handlers = list(log.handlers)
     for h in handlers:
         log.removeHandler(h)

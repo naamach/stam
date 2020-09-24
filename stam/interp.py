@@ -6,11 +6,51 @@ import scipy.spatial.qhull as qhull
 
 
 def triangulate(xy):
+    """
+    triangulate(xy)
+
+    Compute the D-D Delaunay triangulation of a grid.
+
+    Parameters
+    ----------
+    xy : 2-D ndarray of floats with shape (n, D), or length D tuple of 1-D ndarrays with shape (n,).
+        Data point coordinates.
+
+    Returns
+    -------
+    tri : Delaunay object
+        2D Delaunay triangulation of `xy`.
+    """
+
     tri = qhull.Delaunay(xy)
     return tri
 
 
 def interpolate(values, tri, uv, fill_value=np.nan, d=2):
+    """
+    interpolate(values, tri, uv, fill_value=np.nan, d=2)
+
+    Interpolate unstructured D-D data.
+
+    Parameters
+    ----------
+    values : ndarray of float or complex, shape (n,)
+        Data values.
+    tri : Delaunay object
+        2D Delaunay triangulation of the grid.
+    uv : 2-D ndarray of floats with shape (m, D), or length D tuple of ndarrays broadcastable to the same shape.
+        Points at which to interpolate data.
+    fill_value : float, optional
+        Value used to fill in for requested points outside of the convex hull of the input points (default: `np.nan`).
+    d : int, optional
+        Number of dimensions (default: 2).
+
+    Returns
+    -------
+    ret: ndarray
+        Array of interpolated values.
+    """
+
     simplex = tri.find_simplex(uv)
     vertices = np.take(tri.simplices, simplex, axis=0)
     temp = np.take(tri.transform, simplex, axis=0)
@@ -25,12 +65,58 @@ def interpolate(values, tri, uv, fill_value=np.nan, d=2):
 
 
 def triangulate_tracks(tracks, color="bp_rp", mag="mg"):
+    """
+    triangulate_tracks(tracks, color="bp_rp", mag="mg")
+
+    Compute the 2D Delaunay triangulation of the stellar track color-magnitude coordinates.
+
+    Parameters
+    ----------
+    tracks : Table
+        Stellar-track grid, as retrieved by `stam.tracks.get_isomasses` or `stam.tracks.get_combined_isomasses`.
+    color : array_like
+        Color of the stars (usually Gaia's Gbp-Grp).
+    mag : array_like
+        Absolute magnitude of the stars (usually Gaia's M_G; same size as `color`).
+
+    Returns
+    -------
+    tri : Delaunay object
+        2D Delaunay triangulation of the stellar track grid.
+    """
+
     track_points = np.array([tracks[color], tracks[mag]]).T
     tri = triangulate(track_points)
     return tri
 
 
 def interpolate_tracks(tri, color, mag, tracks, param="mass"):
+    """
+    interpolate_tracks(tri, color, mag, tracks, param="mass")
+
+    Interpolate color-magnitude location over the stellar track grid.
+
+    Parameters
+    ----------
+    tri : Delaunay object
+        2D Delaunay triangulation of the stellar track grid, as retrieved by `stam.interp.triangulate_tracks`.
+    color : array_like
+        Color of the stars (usually Gaia's Gbp-Grp).
+    mag : array_like
+        Absolute magnitude of the stars (usually Gaia's M_G; same size as `color`).
+    tracks : Table
+        Stellar-track grid, as retrieved by `stam.tracks.get_isomasses` or `stam.tracks.get_combined_isomasses`.
+    param : str, optional
+        The parameter to evaluate (options: "mass", "age", "mh"; default: "mass").
+
+    Returns
+    -------
+    x : array_like
+        The evaluated parameter.
+    nan_idx : array_like
+        NaN-value indices of `x`.
+    """
+
     obs_points = np.array([color, mag]).T
     x = interpolate(tracks[param], tri, obs_points)
     nan_idx = np.isnan(x)

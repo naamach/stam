@@ -6,13 +6,25 @@ from stam.utils import get_config
 
 def read_parsec(files=None, path=None, config_file="config.ini"):
     """
-    Read PARSEC isochrone *.dat files, as downloaded from http://stev.oapd.inaf.it/cgi-bin/cmd
+    read_parsec(files=None, path=None, config_file="config.ini")
 
-    :param files: PARSEC *.dat file names. If None, read all  *.dat files in <path> (default: None)
-    :param path: path to PARSEC *.dat files. If None, get from config.ini (default: None)
-    :param config_file: the config file (default: "config.ini")
-    :return: All PARSEC models in a single astropy table
+    Read PARSEC isochrone *.dat files, as downloaded from http://stev.oapd.inaf.it/cgi-bin/cmd .
+
+    Parameters
+    ----------
+    files : list of str, optional
+        PARSEC *.dat file names. If None, read all *.dat files in `path` (default: None).
+    path : str, optional
+        Path to PARSEC *.dat files. If None, get from the configuration file (default: None).
+    config_file : str, optional
+        The configuration file name, including path (default: "config.ini").
+
+    Returns
+    -------
+    models : Table
+        All PARSEC models in a single astropy table
     """
+
     config = get_config(config_file)
     if path is None:
         path = config.get('PARSEC', 'PATH')  # PARSEC models path
@@ -35,6 +47,24 @@ def read_parsec(files=None, path=None, config_file="config.ini"):
 
 
 def colname(param, model_name="parsec"):
+    """
+    colname(param, model_name="parsec")
+
+    Return a specific model table column name, according to the model table type.
+
+    Parameters
+    ----------
+    param : str
+        Parameter name.
+    model_name : str, optional
+        Model table type (currently only supports PARSEC)
+
+    Returns
+    -------
+    str
+        The relevant column name.
+    """
+
     if model_name.lower() == "parsec":
         # Zini     MH   logAge Mini  int_IMF         Mass   logL    logTe  logg  label   McoreTP C_O  period0 period1
         # pmode  Mloss  tau1m   X   Y   Xc  Xn  Xo  Cexcess  Z 	 mbolmag  Gmag    G_BPmag  G_RPmag
