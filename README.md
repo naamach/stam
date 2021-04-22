@@ -1,6 +1,6 @@
 # STAM
 
-**Stellar-Track-based Assignment of Mass (STAM)** is a `python` package that assigns mass, metallicity, or age to stars based on their location on the Hertzsprung-Russell diagram (color-magnitude diagram), using stellar evolutionary tracks (not provided by this package).
+**Stellar-Track-based Assignment of Mass (STAM)** is a `python` package that assigns mass, metallicity, or age, to stars based on their location on the Hertzsprung-Russell diagram (color-magnitude diagram), using stellar evolutionary tracks (not provided by this package).
 
 The package has been tested for _Gaia_ DR2 sub-solar main-sequence stars, using [PARSEC evolutionary tracks](http://stev.oapd.inaf.it/cgi-bin/cmd).
 See [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract) for details ([please cite this paper](#citing-and-attributing) if you use `STAM` in your publication). 
@@ -119,6 +119,8 @@ Optional input keywords for `get_mass_and_metallicity`:
 * `idx`: select only specific rows in the Gaia table (default: `None`)
 * `suffix`: add a customized suffix to the output file names (default: `None`)
 * `config_file`: specify which configuration file to use (default: `config.ini`)
+* `sample_settings`: a dictionary including keywords "vmin", "vmax", and "dist" (default: None).
+If provided, only Gaia sources within the specific transverse velocities (in km/s) and distance (in pc), will be evaluated.
 
 ## Acknowledgements
 The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).
