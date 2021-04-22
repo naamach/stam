@@ -1,14 +1,131 @@
 import os
 import time
 import numpy as np
-from stam.utils import get_config, init_log, close_log
-from stam.gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction
-from stam.models import read_parsec
-from stam.tracks import get_combined_isomasses
-from stam.assign import assign_param
+from .utils import get_config, init_log, close_log
+from .gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction, get_gaia_subsample, \
+    get_gaia_isochrone_subsample
+from .getmodels import read_parsec
+from .gentracks import get_combined_isomasses, get_isochrone_polygon
+from .assign import assign_param
 
 
-def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
+def get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=None, is_save=True, log=None,
+              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
+              binary_polygon=None, **kwargs):
+    """
+    get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=None, is_save=True, log=None,
+              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
+              binary_polygon=None, **kwargs)
+
+    Write config file.
+
+    Parameters
+    ----------
+    bp_rp : array_like
+        Gaia Gbp-Grp color.
+    bp_rp_error : array_like
+        Gaia Gbp-Grp color uncertainty (same size as `bp_rp`).
+    mg : array_like
+        Gaia G-band absolute magnitude (same size as `bp_rp`).
+    mg_error : array_like
+        Gaia G-band absolute magnitude uncertainty (same size as `bp_rp`).
+    tracks : Table
+        Stellar-track grid, as retrieved by `stam.gentracks.get_isomasses` or `stam.gentracks.get_combined_isomasses`.
+    param : str, optional
+        The parameter to evaluate (options: "mass", "age", "mh"; default: "mass").
+    suffix : str, optional
+        Output file name suffix (default: None).
+    is_save : bool, optional
+        Save results to file? (default: True).
+    log : Logger, optional
+        Logger object (default: None).
+    output_type : str, optional
+        Output type (npy, csv; default: "csv").
+    output_path : str, optional
+        Result file destination path (default: "").
+    csv_format : str, optional
+        CSV format (default: "%.8f").
+    n_realizations : float, optional
+        Number of parameter assignment realizations (default: 10).
+    interp_fun : str, optional
+        Interpolation method (rbf, griddata, nurbs; default: "rbf").
+    binary_polygon : Path object, optional
+        The polygon defining the equal-mass binary region on the HR-diagram (default: None).
+    **kwargs :
+        Additional arguments to pass to `stam.assign.assign_param
+
+    Returns
+    -------
+    param_mean : array_like
+        Estimated parameter mean for each of stars.
+    param_error : array_like
+        Estimated parameter standard deviation for each of stars.
+    """
+
+    is_local_log = False
+    if log is None:
+        # setup console log
+        log = init_log(config_file=None)
+        is_local_log = True
+
+    if suffix is None:
+        suffix = ""
+
+    if param == "mass":
+        prefix = "M"
+    elif param == "mh":
+        prefix = "MH"
+    elif param == "age":
+        prefix = "Age"
+
+    if not os.path.exists(output_path):
+        log.info(f"Creating output folder {output_path}...")
+        os.makedirs(output_path)
+
+    # assign parameter
+    log.info(f"Assigning {param}...")
+    if binary_polygon is None:
+        log.info("Ignoring twin binary sequence...")
+        param_mean, param_error = assign_param(bp_rp, bp_rp_error, mg, mg_error, tracks, n_realizations=n_realizations,
+                                               param=param, interp_fun=interp_fun, binary_polygon=None, **kwargs)
+    else:
+        log.info("Taking twin binary sequence into account...")
+        param_mean, param_error, binary_param_mean, binary_param_error, weight =\
+            assign_param(bp_rp, bp_rp_error, mg, mg_error, tracks, n_realizations=n_realizations,
+                         param=param, interp_fun=interp_fun, binary_polygon=binary_polygon, **kwargs)
+
+    if is_save:
+        log.info(f"Saving {param}...")
+        if output_type == "npy":
+            np.save(os.path.join(output_path, f"{prefix}_mean{suffix}.npy"), param_mean, allow_pickle=True)
+            np.save(os.path.join(output_path, f"{prefix}_std{suffix}.npy"), param_error, allow_pickle=True)
+            if binary_polygon is not None:
+                np.save(os.path.join(output_path, f"{prefix}_mean_binary{suffix}.npy"), binary_param_mean,
+                        allow_pickle=True)
+                np.save(os.path.join(output_path, f"{prefix}_std_binary{suffix}.npy"), binary_param_error,
+                        allow_pickle=True)
+                np.save(os.path.join(output_path, f"{prefix}_weight_binary{suffix}.npy"), weight,
+                        allow_pickle=True)
+        elif output_type == "csv":
+            np.savetxt(os.path.join(output_path, f"{prefix}_mean{suffix}.csv"), param_mean, fmt=csv_format,
+                       delimiter=",")
+            np.savetxt(os.path.join(output_path, f"{prefix}_std{suffix}.csv"), param_error, fmt=csv_format,
+                       delimiter=",")
+            if binary_polygon is not None:
+                np.savetxt(os.path.join(output_path, f"{prefix}_mean_binary{suffix}.csv"), binary_param_mean,
+                           fmt=csv_format, delimiter=",")
+                np.savetxt(os.path.join(output_path, f"{prefix}_std_binary{suffix}.csv"), binary_param_error,
+                           fmt=csv_format, delimiter=",")
+                np.savetxt(os.path.join(output_path, f"{prefix}_weight_binary{suffix}.csv"), weight, fmt=csv_format,
+                           delimiter=",")
+
+    if is_local_log:
+        close_log(log)
+
+    return param_mean, param_error
+
+
+def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sample_settings=None):
     """
     get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini")
 
@@ -22,6 +139,10 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
         Customized suffix to add to the output file names (default: None).
     config_file : str, optional
         The configuration file name, including path (default: "config.ini").
+    sample_settings : dict, optional
+        A dictionary including keywords "vmin", "vmax", and "dist" (default: None).
+        If provided, only Gaia sources within the specific transverse velocities (in km/s) and distance (in pc),
+        will be evaluated.
 
     Returns
     -------
@@ -54,7 +175,8 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
     log.info(f"Gaia table has {len(gaia)} sources.")
 
     if idx is not None:
-        log.info(f"Using {np.count_nonzero(idx)} Gaia sources out of {len(gaia)} ({100*np.count_nonzero(idx)/len(gaia):.1f}%).")
+        log.info(
+            f"Using {np.count_nonzero(idx)} Gaia sources out of {len(gaia)} ({100 * np.count_nonzero(idx) / len(gaia):.1f}%).")
         gaia = gaia[idx]
 
     bp_rp = gaia["bp_rp"]
@@ -67,6 +189,7 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
         e_bprp, A_G = calc_gaia_extinction(gaia)
         bp_rp = bp_rp - e_bprp
         mg = mg - A_G
+        suffix += "_extinction"
 
     # get tracks
     if config.get("MODELS", "SOURCE") == "PARSEC":
@@ -75,41 +198,71 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini"):
     else:
         log.error(f"{config.get('MODELS', 'SOURCE')} models not implemented yet!")
 
-    mass_bins = np.arange(config.getfloat("MODELS", "M_MIN"), config.getfloat("MODELS", "M_MAX"), config.getfloat("MODELS", "M_STEP"))
+    mass_bins = np.arange(config.getfloat("MODELS", "M_MIN"),
+                          config.getfloat("MODELS", "M_MAX") + config.getfloat("MODELS", "M_STEP"),
+                          config.getfloat("MODELS", "M_STEP"))
+    exclude_pre_ms_masses = config.get("MODELS", "EXCLUDE_PRE_MS_MASSES")
+    if exclude_pre_ms_masses == "":
+        exclude_pre_ms_masses = []
+    else:
+        exclude_pre_ms_masses = [float(x) for x in exclude_pre_ms_masses.split(",")]
     age = config.getfloat("MODELS", "AGE")
     mh_pre_ms = config.getfloat("MODELS", "MH_PRE_MS")
     is_smooth = config.getboolean("MODELS", "SMOOTH")
     smooth_sigma = config.getint("MODELS", "SMOOTH_SIGMA")
     tracks = get_combined_isomasses(models, mass=mass_bins, age=age, mh_pre_ms=mh_pre_ms, is_smooth=is_smooth,
-                                    smooth_sigma=smooth_sigma)
+                                    smooth_sigma=smooth_sigma, exclude_pre_ms_masses=exclude_pre_ms_masses)
+
+    if sample_settings is not None:
+        gaia_idx = get_gaia_subsample(gaia, sample_settings)
+        log.info(
+            f"Using {np.count_nonzero(gaia_idx)} Gaia sources out of {len(gaia)} ({100 * np.count_nonzero(gaia_idx) / len(gaia):.1f}%).")
+        bp_rp = bp_rp[gaia_idx]
+        mg = mg[gaia_idx]
+        bp_rp_error = bp_rp_error[gaia_idx]
+        mg_error = mg_error[gaia_idx]
+        ms_idx = get_gaia_isochrone_subsample(bp_rp, mg, models, sample_settings["age1"], sample_settings["mh1"],
+                                              sample_settings["age2"], sample_settings["mh2"],
+                                              stage1=sample_settings["stage1"], stage2=sample_settings["stage2"])
+        bp_rp = bp_rp[ms_idx]
+        mg = mg[ms_idx]
+        bp_rp_error = bp_rp_error[ms_idx]
+        mg_error = mg_error[ms_idx]
+
+    # interpolation parameters
+    interp_fun = config.get("INTERP", "METHOD")
+    if interp_fun == "rbf":
+        kwargs = {"function": config.get("INTERP", "RBF_FUN")}
+    else:
+        kwargs = {}
+
+    binary_polygon = None
+    if config.getboolean("BINARY", "CONSIDER_TWINS"):
+        if sample_settings is not None:
+            log.info("Taking binary twin sequence into account.")
+            binary_polygon = get_isochrone_polygon(models, sample_settings["binary age1"], sample_settings["binary mh1"],
+                                                   sample_settings["binary age1"], sample_settings["binary mh1"],
+                                                   stage1=1, stage2=1, bp_rp_max=sample_settings["binary bp_rp max"],
+                                                   mg_shift1=-2.5*np.log10(config.getfloat("BINARY", "FLUX_RATIO_MIN")),
+                                                   mg_shift2=-2.5*np.log10(config.getfloat("BINARY", "FLUX_RATIO_MAX")))[0]
+        else:
+            log.warning("No sample settings provided, ignoring binary twin sequence.")
 
     # assign mass
-    log.info("Assigning masses...")
     n_realizations = config.getint("MASS", "N_REALIZATIONS")
-    m_mean, m_error = assign_param(bp_rp, bp_rp_error, mg, mg_error, tracks, n_realizations=n_realizations, param="mass")
-
-    if is_save:
-        log.info("Saving masses...")
-        if output_type == "npy":
-            np.save(os.path.join(path, f"Mmean{suffix}.npy"), m_mean, allow_pickle=True)
-            np.save(os.path.join(path, f"Mstd{suffix}.npy"), m_error, allow_pickle=True)
-        elif output_type == "csv":
-            np.savetxt(os.path.join(path, f"Mmean{suffix}.csv"), m_mean, fmt=csv_format, delimiter=",")
-            np.savetxt(os.path.join(path, f"Mstd{suffix}.csv"), m_error, fmt=csv_format, delimiter=",")
+    log.info(f"Assigning masses using {n_realizations} realizations...")
+    m_mean, m_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=suffix, is_save=is_save,
+                                log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                                n_realizations=n_realizations, interp_fun=interp_fun,
+                                binary_polygon=binary_polygon, **kwargs)
 
     # assign mh
-    log.info("Assigning [M/H]...")
     n_realizations = config.getint("MH", "N_REALIZATIONS")
-    mh_mean, mh_error = assign_param(bp_rp, bp_rp_error, mg, mg_error, tracks, n_realizations=n_realizations, param="mh")
-
-    if is_save:
-        log.info("Saving metallicities...")
-        if output_type == "npy":
-            np.save(os.path.join(path, f"MHmean{suffix}.npy"), mh_mean, allow_pickle=True)
-            np.save(os.path.join(path, f"MHstd{suffix}.npy"), mh_error, allow_pickle=True)
-        elif output_type == "csv":
-            np.savetxt(os.path.join(path, f"MHmean{suffix}.csv"), mh_mean, fmt=csv_format, delimiter=",")
-            np.savetxt(os.path.join(path, f"MHstd{suffix}.csv"), mh_error, fmt=csv_format, delimiter=",")
+    log.info(f"Assigning [M/H] using {n_realizations} realizations...")
+    mh_mean, mh_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mh", suffix=suffix, is_save=is_save,
+                                  log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                                  n_realizations=n_realizations, interp_fun=interp_fun,
+                                  binary_polygon=binary_polygon, **kwargs)
 
     close_log(log)
 

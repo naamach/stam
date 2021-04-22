@@ -2,7 +2,7 @@ from distutils.core import setup
 import setuptools
 
 setup(name='stam',
-      version='0.1.0',
+      version='0.2.0',
       author="Na'ama Hallakoun",
       author_email='naama.hallakoun@weizmann.ac.il',
       description='Stellar-Track-based Assignment of Mass',
@@ -10,7 +10,7 @@ setup(name='stam',
       url='https://github.com/naamach/stam',
       license='LICENSE.txt',
       packages=setuptools.find_packages(),
-      install_requires=['astropy', 'configparser', 'numpy', 'scipy', 'tqdm'],
+      install_requires=['astropy', 'configparser', 'numpy', 'scipy', 'tqdm', 'geomdl'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Environment :: Console',

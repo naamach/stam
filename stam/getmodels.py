@@ -1,7 +1,7 @@
 import glob
 from astropy.io import ascii
 from astropy.table import vstack
-from stam.utils import get_config
+from .utils import get_config
 
 
 def read_parsec(files=None, path=None, config_file="config.ini"):
@@ -25,9 +25,14 @@ def read_parsec(files=None, path=None, config_file="config.ini"):
         All PARSEC models in a single astropy table
     """
 
-    config = get_config(config_file)
+    if config_file is None:
+        if path is None:
+            raise Exception("If no config file is given, a path must be set!")
+    else:
+        config = get_config(config_file)
     if path is None:
         path = config.get('PARSEC', 'PATH')  # PARSEC models path
+    print(f"Taking PARSEC files from {path}")
 
     if files is None:
         # read all .dat files in the path

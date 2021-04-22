@@ -67,6 +67,11 @@ PATH = /path/to/gaia/files/ ; path to Gaia data folder
 FILE = GaiaFileName.fits ; Gaia data file name (only works for FITS files)
 CORRECT_EXTINCTION = TRUE ; correct Gaia data for extinction?
 
+[BINARY]
+CONSIDER_TWINS = TRUE ; consider equal-mass binary sequence when assigning mass/metallicity/age?
+FLUX_RATIO_MIN = 1.9 ; minimal binary twin flux ratio
+FLUX_RATIO_MAX = 2 ; maximal binary twin flux ratio
+
 [MODELS]
 SOURCE = PARSEC ; which isochrone models to use?
 M_MIN = 0.15 ; [Msun] minimum track mass
@@ -76,9 +81,15 @@ AGE = 5 ; [Gyr] age of the MS tracks
 MH_PRE_MS = 0.7 ; pre-MS track [M/H]
 SMOOTH = True ; smooth track?
 SMOOTH_SIGMA = 3 ; Gaussian smoothing sigma
+EXCLUDE_PRE_MS_MASSES = ; [Msun] exclude the pre-MS tracks of these masses (to avoid crossing other tracks),
+                                                       ; separate values by a comma, leave empty to include all
 
 [PARSEC]
 PATH = /path/to/PARSEC/files/ ; path to the PARSEC *.dat tables (concatenates all *.dat files in the folder to a single table)
+
+[INTERP]
+METHOD = rbf ; rbf, griddata, nurbs
+RBF_FUN = linear
 
 [MASS]
 N_REALIZATIONS = 10 ; number of realizations
@@ -103,4 +114,7 @@ A log file will be saved to the same folder.
 Optional input keywords for `get_mass_and_metallicity`:
 * `idx`: select only specific rows in the Gaia table (default: `None`)
 * `suffix`: add a customized suffix to the output file names (default: `None`)
-* `config_file`: specify which configuration file to use (default: `config.ini`) 
+* `config_file`: specify which configuration file to use (default: `config.ini`)
+
+## Acknowledgements
+The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).
