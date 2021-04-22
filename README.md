@@ -1,6 +1,9 @@
 # STAM
 
-Stellar-Track-based Assignment of Mass (STAM).
+**Stellar-Track-based Assignment of Mass (STAM)** is a `python` package that assigns mass, metallicity, or age to stars based on their location on the Hertzsprung-Russell diagram (color-magnitude diagram), using stellar evolutionary tracks (not provided by this package).
+
+The package has been tested for _Gaia_ DR2 sub-solar main-sequence stars, using [PARSEC evolutionary tracks](http://stev.oapd.inaf.it/cgi-bin/cmd).
+See [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract) for details ([please cite this paper](#citing-and-attributing) if you use `STAM` in your publication). 
 
 ## Getting started
 
@@ -12,6 +15,7 @@ Stellar-Track-based Assignment of Mass (STAM).
 * `numpy`
 * `scipy`
 * `tdqm`
+* `geomdl`
 
 ### Installing
 
@@ -118,3 +122,23 @@ Optional input keywords for `get_mass_and_metallicity`:
 
 ## Acknowledgements
 The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).
+
+## Citing and attributing
+If you use `STAM` in your work, please provide a link to [this webpage](https://github.com/naamach/stam), and cite [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract):
+```
+@ARTICLE{2020arXiv200905047H,
+       author = {{Hallakoun}, Na'ama and {Maoz}, Dan},
+        title = "{A bottom-heavy initial mass function for the accreted blue-halo stars of the Milky Way}",
+      journal = {arXiv e-prints},
+     keywords = {Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
+         year = 2020,
+        month = sep,
+          eid = {arXiv:2009.05047},
+        pages = {arXiv:2009.05047},
+archivePrefix = {arXiv},
+       eprint = {2009.05047},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
