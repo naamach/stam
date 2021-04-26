@@ -102,15 +102,20 @@ N_REALIZATIONS = 10 ; number of realizations
 N_REALIZATIONS = 10 ; number of realizations
 ```
 
+Alternatively, you can use `stam.utils.write_config` to help you write the configuration file (consult the function help for details).
+
 ### Running `stam`
 
-To assign mass and metallicities to all the Gaia sources in your Gaia data file, run in `python`:
+#### Without applying special treatment to equal-mass binaries
+To assign mass and metallicities to all the Gaia sources in your Gaia data file, run in `python` (if the config keyword `CONSIDER_TWINS` is set to `FALSE`):
 
 ```
 from stam.run import  get_mass_and_metallicity
 
 m_mean, m_error, mh_mean, mh_error = get_mass_and_metallicity()
 ```
+
+This returns, for each star, the mean values of the mass  (`m_mean`) and metallicity (`mh_mean`), and their corresponding standard deviations (`*_error`).
 
 This will also save the results to files, according to the specifications in the `config.ini` file.
 A log file will be saved to the same folder.
@@ -121,6 +126,44 @@ Optional input keywords for `get_mass_and_metallicity`:
 * `config_file`: specify which configuration file to use (default: `config.ini`)
 * `sample_settings`: a dictionary including keywords "vmin", "vmax", and "dist" (default: None).
 If provided, only Gaia sources within the specific transverse velocities (in km/s) and distance (in pc), will be evaluated.
+  
+#### When applying special treatment to equal-mass binaries
+
+If you want to treat the equal-mass binary sequence above the main sequence separately, set the config keyword `CONSIDER_TWINS` to `TRUE`.
+To assign mass and metallicities to all the Gaia sources in your Gaia data file, run in `python`:
+
+```
+from stam.run import  get_mass_and_metallicity
+
+m_mean, m_error, binary_m_mean, binary_m_error, m_weight,\
+ mh_mean, mh_error, binary_mh_mean, binary_mh_error, mh_weight = get_mass_and_metallicity()
+```
+
+This time you will get some extra output variables:
+* `*_mean`: the mass/metallicity mean value assuming a single star
+* `*_error`: the mass/metallicity standard deviation assuming a single star
+* `binary_*_mean`: the mass/metallicity mean value assuming an equal-mass binary
+* `binary_*_error`: the mass/metallicity standard deviation assuming an equal-mass binary
+* `*_weight`: the single-star probability = the fraction of realizations in which the star was **outside** of the defined equal-mass binary region
+
+### Choosing the interpolation method
+
+`STAM` includes three different interpolation methods, that can be used to interpolate the evolutionary track grid: `rbf`, `griddata`, and `nurbs`.
+
+#### rbf
+This is `scipy`'s radial basis function (RBF) interpolation.
+See the [`scipy.interpolate.Rbf` reference page](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Rbf.html) for details.
+When using the `rbf` method, you should also provide the `RBF_FUN` keyword, which is the `function` argument of `scipy.interpolate.Rbf`.
+We found the `rbf` method with `linear` function to work best in our case ([Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract)).
+
+#### griddata
+This is based on `scipy`'s `griddata` linear interpolation: [`scipy.interpolate.griddata`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html),
+but uses a faster implementation, based on [this answer](https://stackoverflow.com/questions/20915502/speedup-scipy-griddata-for-multiple-interpolations-between-two-irregular-grids).
+In our case, it resulted in some artifacts when using combined pre-main-sequence+main-sequence evolutionary tracks.
+
+#### nurbs
+This is [`geomdl`'s NURBS library](https://nurbs-python.readthedocs.io/en/5.x/) (Non-uniform rational basis spline).
+
 
 ## Acknowledgements
 The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).

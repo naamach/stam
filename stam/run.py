@@ -90,7 +90,7 @@ def get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=Non
                                                param=param, interp_fun=interp_fun, binary_polygon=None, **kwargs)
     else:
         log.info("Taking twin binary sequence into account...")
-        param_mean, param_error, binary_param_mean, binary_param_error, weight =\
+        param_mean, param_error, binary_param_mean, binary_param_error, weight = \
             assign_param(bp_rp, bp_rp_error, mg, mg_error, tracks, n_realizations=n_realizations,
                          param=param, interp_fun=interp_fun, binary_polygon=binary_polygon, **kwargs)
 
@@ -122,7 +122,11 @@ def get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=Non
     if is_local_log:
         close_log(log)
 
-    return param_mean, param_error
+    if binary_polygon is None:
+        return param_mean, param_error
+    else:
+        # take binary sequence into account
+        return param_mean, param_error, binary_param_mean, binary_param_error, weight
 
 
 def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sample_settings=None):
@@ -240,30 +244,53 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sa
     if config.getboolean("BINARY", "CONSIDER_TWINS"):
         if sample_settings is not None:
             log.info("Taking binary twin sequence into account.")
-            binary_polygon = get_isochrone_polygon(models, sample_settings["binary age1"], sample_settings["binary mh1"],
-                                                   sample_settings["binary age1"], sample_settings["binary mh1"],
-                                                   stage1=1, stage2=1, bp_rp_max=sample_settings["binary bp_rp max"],
-                                                   mg_shift1=-2.5*np.log10(config.getfloat("BINARY", "FLUX_RATIO_MIN")),
-                                                   mg_shift2=-2.5*np.log10(config.getfloat("BINARY", "FLUX_RATIO_MAX")))[0]
+            binary_polygon = \
+            get_isochrone_polygon(models, sample_settings["binary age1"], sample_settings["binary mh1"],
+                                  sample_settings["binary age1"], sample_settings["binary mh1"],
+                                  stage1=1, stage2=1, bp_rp_max=sample_settings["binary bp_rp max"],
+                                  mg_shift1=-2.5 * np.log10(config.getfloat("BINARY", "FLUX_RATIO_MIN")),
+                                  mg_shift2=-2.5 * np.log10(config.getfloat("BINARY", "FLUX_RATIO_MAX")))[0]
         else:
             log.warning("No sample settings provided, ignoring binary twin sequence.")
 
     # assign mass
     n_realizations = config.getint("MASS", "N_REALIZATIONS")
     log.info(f"Assigning masses using {n_realizations} realizations...")
-    m_mean, m_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=suffix, is_save=is_save,
-                                log=log, output_type=output_type, output_path=path, csv_format=csv_format,
-                                n_realizations=n_realizations, interp_fun=interp_fun,
-                                binary_polygon=binary_polygon, **kwargs)
+    if binary_polygon is None:
+        m_mean, m_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=suffix,
+                                    is_save=is_save,
+                                    log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                                    n_realizations=n_realizations, interp_fun=interp_fun,
+                                    binary_polygon=binary_polygon, **kwargs)
+    else:
+        # take binary sequence into account
+        m_mean, m_error, binary_m_mean, binary_m_error, m_weight = \
+            get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=suffix, is_save=is_save,
+                      log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                      n_realizations=n_realizations, interp_fun=interp_fun,
+                      binary_polygon=binary_polygon, **kwargs)
 
     # assign mh
     n_realizations = config.getint("MH", "N_REALIZATIONS")
     log.info(f"Assigning [M/H] using {n_realizations} realizations...")
-    mh_mean, mh_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mh", suffix=suffix, is_save=is_save,
-                                  log=log, output_type=output_type, output_path=path, csv_format=csv_format,
-                                  n_realizations=n_realizations, interp_fun=interp_fun,
-                                  binary_polygon=binary_polygon, **kwargs)
+    if binary_polygon is None:
+        mh_mean, mh_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mh", suffix=suffix,
+                                      is_save=is_save,
+                                      log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                                      n_realizations=n_realizations, interp_fun=interp_fun,
+                                      binary_polygon=binary_polygon, **kwargs)
+    else:
+        # take binary sequence into account
+        mh_mean, mh_error, binary_mh_mean, binary_mh_error, mh_weight = \
+            get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mh", suffix=suffix, is_save=is_save,
+                      log=log, output_type=output_type, output_path=path, csv_format=csv_format,
+                      n_realizations=n_realizations, interp_fun=interp_fun,
+                      binary_polygon=binary_polygon, **kwargs)
 
     close_log(log)
 
-    return m_mean, m_error, mh_mean, mh_error
+    if binary_polygon is None:
+        return m_mean, m_error, mh_mean, mh_error
+    else:
+        # take binary sequence into account
+        return m_mean, m_error, binary_m_mean, binary_m_error, m_weight, mh_mean, mh_error, binary_mh_mean, binary_mh_error, mh_weight
