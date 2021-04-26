@@ -149,6 +149,53 @@ This time you will get some extra output variables:
 ### Choosing the interpolation method
 
 `STAM` includes three different interpolation methods, that can be used to interpolate the evolutionary track grid: `rbf`, `griddata`, and `nurbs`.
+It is recommended to plot the resulting grid before running the full mass assignment procedure, to check for problems in the grid evaluation.
+For example, to check the `rbf` `linear` interpolation:
+
+```
+import numpy as np
+import scipy
+import matplotlib.pyplot as plt
+import stam
+
+isochrone = stam.getmodels.read_parsec()
+mass = np.arange(0.15, 1.1, 0.05)
+tracks = stam.gentracks.get_combined_isomasses(isochrone, mass=mass, age=5, mh_pre_ms=0.7, age_min=0.005,
+                                                is_smooth=True, smooth_sigma=3, exclude_pre_ms_masses=[0.15])
+
+x = np.array(tracks["bp_rp"])
+y = np.array(tracks["mg"])
+z = np.array(tracks["mass"])
+
+xstep=0.05
+ystep=0.05
+
+def tracks2grid(tracks, xparam="bp_rp", yparam="mg", xstep=0.05, ystep=0.05):
+
+    xmin = np.min(np.around(tracks[xparam], -int(np.round(np.log10(xstep)))))
+    xmax = np.max(np.around(tracks[xparam], -int(np.round(np.log10(xstep)))))
+    ymin = np.min(np.around(tracks[yparam], -int(np.round(np.log10(ystep)))))
+    ymax = np.max(np.around(tracks[yparam], -int(np.round(np.log10(ystep)))))
+    x, y = np.meshgrid(np.arange(xmin, xmax, xstep), np.arange(ymin, ymax, ystep))
+            
+    return x, y, xmin, xmax, ymin, ymax
+
+grid_x, grid_y, xmin, xmax, ymin, ymax = tracks2grid(tracks, xstep=xstep, ystep=ystep)
+
+fun_type = "linear"
+
+interp = scipy.interpolate.Rbf(x, y, z, function=fun_type)
+grid_z = interp(grid_x, grid_y)
+
+fig = plt.figure()
+plt.plot(x, y, 'ko', markersize=1)
+plt.imshow(grid_z, origin="lower", vmin=0.1, vmax=1.2, extent=[xmin, xmax, ymin, ymax], cmap='viridis')
+plt.colorbar()
+plt.title(fun_type)
+plt.gca().invert_yaxis()
+
+plt.show()
+```
 
 #### rbf
 This is `scipy`'s radial basis function (RBF) interpolation.
@@ -162,7 +209,7 @@ but uses a faster implementation, based on [this answer](https://stackoverflow.c
 In our case, it resulted in some artifacts when using combined pre-main-sequence+main-sequence evolutionary tracks.
 
 #### nurbs
-This is [`geomdl`'s NURBS library](https://nurbs-python.readthedocs.io/en/5.x/) (Non-uniform rational basis spline).
+This is [`geomdl`'s NURBS library](https://nurbs-python.readthedocs.io/en/5.x/) (Non-Uniform Rational Basis Spline).
 
 
 ## Acknowledgements
