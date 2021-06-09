@@ -92,7 +92,8 @@ def plot_track(bp_rp, mg, title=None, ax=None, c=None, label=None, **kwargs):
 
 
 def plot_combined_isomasses(tracks, mass=np.arange(0.1, 1.2, 0.1), mass_res=0.007, ax=None,
-                            is_colorline=True, c='k', print_mass=True, plot_pre_ms=True, **kwargs):
+                            is_colorline=True, c='k', plot_pre_ms=True, print_mass=True,
+                            mass_label_x_offset=-0.1, mass_label_y_offset=0.25, **kwargs):
     """
         plot_combined_isomasses(tracks, mass=np.arange(0.1, 1.2, 0.1), mass_res=0.007, ax=None,
                                 is_colorline=True, c='k', print_mass=True, plot_pre_ms=True, **kwargs)
@@ -113,10 +114,14 @@ def plot_combined_isomasses(tracks, mass=np.arange(0.1, 1.2, 0.1), mass_res=0.00
             Plot tracks in gradient colors by mass and metallicity? (default: True)
         c : str, optional
             Tracks plot color, if `is_colorline=False` (default: 'k').
-        print_mass : bool, optional
-            Print mass label next to tracks? (default: True).
         plot_pre_ms : bool, optional
             Plot the pre-main-sequence part of the tracks? (default: True)
+        print_mass : bool, optional
+            Print mass label next to tracks? (default: True).
+        mass_label_x_offset : float, optional
+            Mass label x-axis offset (default: -0.1).
+        mass_label_y_offset : float, optional
+            Mass label y-axis offset (default: 0.25).
         **kwargs : optional
             Additional arguments to be passed to `matplotlib.pyplot.plot`.
 
@@ -180,8 +185,8 @@ def plot_combined_isomasses(tracks, mass=np.arange(0.1, 1.2, 0.1), mass_res=0.00
         if print_mass:
             coef = np.polyfit(bp_rp[0:25], mg[0:25], 1)
             p = np.poly1d(coef)
-            text_x = bp_rp[0] - 0.1
-            text_y = p(text_x) + 0.25
+            text_x = bp_rp[0] + mass_label_x_offset
+            text_y = p(text_x) + mass_label_y_offset
             text_position = np.array([text_x, text_y])
 
             text_angle = ax.transData.transform_angles(np.array((np.rad2deg(np.arctan(coef[0])),)),
