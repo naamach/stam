@@ -216,21 +216,20 @@ This is [`geomdl`'s NURBS library](https://nurbs-python.readthedocs.io/en/5.x/) 
 The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).
 
 ## Citing and attributing
-If you use `STAM` in your work, please provide a link to [this webpage](https://github.com/naamach/stam), and cite [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract):
+If you use `STAM` in your work, please provide a link to [this webpage](https://github.com/naamach/stam), and cite [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp.1981H/abstract):
 ```
-@ARTICLE{2020arXiv200905047H,
+@ARTICLE{2021MNRAS.tmp.1981H,
        author = {{Hallakoun}, Na'ama and {Maoz}, Dan},
-        title = "{A bottom-heavy initial mass function for the accreted blue-halo stars of the Milky Way}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
-         year = 2020,
-        month = sep,
-          eid = {arXiv:2009.05047},
-        pages = {arXiv:2009.05047},
+        title = "{A bottom-heavy initial mass function for the likely-accreted blue-halo stars of the Milky Way}",
+      journal = {\mnras},
+     keywords = {stars: luminosity function, mass function, Hertzsprung, Russell and colour, magnitude diagrams, Galaxy: stellar content, solar neighbourhood, methods: statistical, stars: statistics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
+         year = 2021,
+        month = jul,
+          doi = {10.1093/mnras/stab2145},
 archivePrefix = {arXiv},
        eprint = {2009.05047},
  primaryClass = {astro-ph.GA},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp.1981H},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 ```
