@@ -3,7 +3,7 @@
 **Stellar-Track-based Assignment of Mass (STAM)** is a `python` package that assigns mass, metallicity, or age, to stars based on their location on the Hertzsprung-Russell diagram (color-magnitude diagram), using stellar evolutionary tracks (not provided by this package).
 
 The package has been tested for _Gaia_ DR2 sub-solar main-sequence stars, using [PARSEC evolutionary tracks](http://stev.oapd.inaf.it/cgi-bin/cmd).
-See [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract) for details ([please cite this paper](#citing-and-attributing) if you use `STAM` in your publication). 
+See [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.507..398H/abstract) for details ([please cite this paper](#citing-and-attributing) if you use `STAM` in your publication). 
 
 ## Getting started
 
@@ -40,7 +40,12 @@ $ pip install git+https://github.com/naamach/stam.git --upgrade
 ### Download the PARSEC models
 First, you need to download some stellar evolution tracks, that will be used to estimate the stellar parameters.
 You can download the PARSEC isochrones from [here](http://stev.oapd.inaf.it/cgi-bin/cmd).
-You might need to download the table iteratively, in case your query exceeds 400 rows.
+Make sure to download isochrones covering the full range of parameters you wish to probe (i.e. spanning the full relevant range of age, mass, and metallicity, in small enough steps).
+For the analysis in [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.507..398H/abstract) we downloaded the following PARSEC tracks:
+* Ages 1-400Myr in 1Myr steps, [M/H]=0.7 (for the pre-main-sequence tracks)
+* Ages 0.5-15Gyr in 0.5Gyr steps, [M/H]=-2 to +0.7 in 0.1dex steps (for the main-sequence tracks)
+
+You might need to download the isochrones iteratively, in case your query exceeds 400 rows.
 Save all the resulting `*.dat` files into a single folder.
 `stam` will concatenate all the `*.dat` files in that folder into a single table.
 
@@ -216,20 +221,23 @@ This is [`geomdl`'s NURBS library](https://nurbs-python.readthedocs.io/en/5.x/) 
 The multicolor plot functions defined in `colorline.py` are taken from [David P. Sanders' `colorline` Jupyter Notebook](https://nbviewer.jupyter.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb).
 
 ## Citing and attributing
-If you use `STAM` in your work, please provide a link to [this webpage](https://github.com/naamach/stam), and cite [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp.1981H/abstract):
+If you use `STAM` in your work, please provide a link to [this webpage](https://github.com/naamach/stam), and cite [Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.507..398H/abstract):
 ```
-@ARTICLE{2021MNRAS.tmp.1981H,
+@ARTICLE{2021MNRAS.507..398H,
        author = {{Hallakoun}, Na'ama and {Maoz}, Dan},
         title = "{A bottom-heavy initial mass function for the likely-accreted blue-halo stars of the Milky Way}",
       journal = {\mnras},
-     keywords = {stars: luminosity function, mass function, Hertzsprung, Russell and colour, magnitude diagrams, Galaxy: stellar content, solar neighbourhood, methods: statistical, stars: statistics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
+     keywords = {methods: statistical, Hertzsprung-Russell and colour-magnitude diagrams, stars: luminosity function, mass function, stars: statistics, solar neighbourhood, Galaxy: stellar content, Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
          year = 2021,
-        month = jul,
+        month = oct,
+       volume = {507},
+       number = {1},
+        pages = {398-413},
           doi = {10.1093/mnras/stab2145},
 archivePrefix = {arXiv},
        eprint = {2009.05047},
  primaryClass = {astro-ph.GA},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp.1981H},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2021MNRAS.507..398H},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 ```
