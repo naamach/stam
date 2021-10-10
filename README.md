@@ -206,7 +206,7 @@ plt.show()
 This is `scipy`'s radial basis function (RBF) interpolation.
 See the [`scipy.interpolate.Rbf` reference page](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Rbf.html) for details.
 When using the `rbf` method, you should also provide the `RBF_FUN` keyword, which is the `function` argument of `scipy.interpolate.Rbf`.
-We found the `rbf` method with `linear` function to work best in our case ([Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2020arXiv200905047H/abstract)).
+We found the `rbf` method with `linear` function to work best in our case ([Hallakoun & Maoz 2021](https://ui.adsabs.harvard.edu/abs/2021MNRAS.507..398H/abstract)).
 
 #### griddata
 This is based on `scipy`'s `griddata` linear interpolation: [`scipy.interpolate.griddata`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.griddata.html),
