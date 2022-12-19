@@ -438,12 +438,13 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
 
 
 def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
-                       stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0):
+                       stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
+                       is_interpolate=True):
     """
     get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
                        stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0)
 
-    Get the polygon enclosed by two isochrones.
+    Get the polygon enclosed by one side of an evolutionary track.
 
     Parameters
     ----------
@@ -477,12 +478,13 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     Returns
     -------
     polygon : Path object
-        The polygon enclosed by the two stellar evolutionary tracks.
+        The polygon enclosed by one side of an evolutionary track.
 
     """
     BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
-                                       mass_max=mass_max, age_res=age_res,
-                                       mh_res=mh_res, mass_res=mass_res, stage=stage)[:4]
+                                   mass_max=mass_max, age_res=age_res,
+                                   mh_res=mh_res, mass_res=mass_res,
+                                   stage=stage, stage_min=stage_min, stage_max=stage_max)[:4]
 
     BP_RP = BP - RP + bp_rp_shift
     idx = (bp_rp_min <= BP_RP) & (BP_RP <= bp_rp_max)
@@ -490,13 +492,22 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     G = G[idx] + mg_shift
     mass = mass[idx]
 
+    if is_interpolate:
+        idx = np.argsort(G[-2:])
+        p = np.polyfit(G[-2:][idx], BP_RP[-2:][idx], 1)
+        p = np.poly1d(p)
+        extra_point = np.poly1d(np.array([-1]))
+        BP_RP = np.concatenate([BP_RP, extra_point])
+        G = np.concatenate([G, np.array([-1])])
+
     if side.lower() == "blue":
-        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[-np.inf, -np.inf], [np.max(G), np.min(G)]]).T))
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[-10, -10], [np.min(G), np.max(G)]]).T))
     elif side.lower() == "red":
-        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[np.inf, np.inf], [np.max(G), np.min(G)]]).T))
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[10, 10], [np.min(G), np.max(G)]]).T))
     else:
         print(f"Unimplemented side {side}!")
 
     polygon = Path(vertices)
 
     return polygon, BP_RP, G, mass
+
