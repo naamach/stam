@@ -48,6 +48,8 @@ def read_parsec(files=None, path=None, config_file="config.ini"):
             li = line.strip()
             if li.startswith("#"):
                 header_start += 1
+            else:
+                break
 
         iso = ascii.read(file, header_start=header_start)
         if i == 0:

@@ -119,6 +119,45 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
         return param_mean, param_error, binary_param_mean, binary_param_error, weight
 
 
+def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10):
+    """
+    assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10)
+
+    Assign a star to a polygon based on its color and magnitude (taking uncertainties into account).
+
+    Parameters
+    ----------
+    color : array_like
+        Color of the stars (usually Gaia's Gbp-Grp).
+    color_error : array_like
+        `color` uncertainty (same size as `color`).
+    mag : array_like
+        Absolute magnitude of the stars (usually Gaia's M_G; same size as `color`).
+    mag_error : array_like
+        `mag` uncertainty (same size as `color`).
+    polygon : Path object
+        A polygon defining a location on the CMD.
+    n_realizations : int, optional
+        Number of realizations to draw for each star, from a 2D-Gaussian distribution around the color-magnitude
+        position of the star (default: 10).
+
+    Returns
+    -------
+    score : array_like
+
+    """
+    score = np.zeros(len(color))
+    for i in tqdm(range(len(color))):  # for each gaia source
+        mean = [color[i], mag[i]]
+        cov = [[color_error[i], 0], [0, mag_error[i]]]
+
+        x = np.random.multivariate_normal(mean, cov, size=n_realizations)
+        idx = polygon.contains_points(np.array([x[:, 0], x[:, 1]]).T)
+        score[i] = np.count_nonzero(idx)/n_realizations
+
+    return score
+
+
 def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realizations=10, thresh=0.5):
     """
     assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realizations=10, thresh=0.5)
@@ -136,26 +175,20 @@ def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realization
     mag_error : array_like
         `mag` uncertainty (same size as `color`).
     polygon : Path object
-        The polygon enclosed by one side of an evolutionary track.
+        A polygon defining a location on the CMD.
     n_realizations : int, optional
         Number of realizations to draw for each star, from a 2D-Gaussian distribution around the color-magnitude
         position of the star (default: 10).
-    thresh : flaot, optional
-        Which interpolation method to use (default: 0.5).
+    thresh : float, optional
+        Polygon assignment minimal threshold score (default: 0.5).
 
     Returns
     -------
     inside_idx : array_like
-
+        Indices of stars inside the polygon.
     """
-    inside_idx = np.zeros(len(color), dtype=bool)
-    for i in tqdm(range(len(color))):  # for each gaia source
-        mean = [color[i], mag[i]]
-        cov = [[color_error[i], 0], [0, mag_error[i]]]
 
-        x = np.random.multivariate_normal(mean, cov, size=n_realizations)
-        idx = polygon.contains_points(np.array([x[:, 0], x[:, 1]]).T)
-        if np.count_nonzero(idx)/n_realizations >= thresh:
-            inside_idx[i] = True
+    score = assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=n_realizations)
+    inside_idx = score >= thresh
 
     return inside_idx
