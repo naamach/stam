@@ -8,7 +8,8 @@ from .getmodels import colname
 def get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
-                 stage_min=0, stage_max=np.inf):
+                 stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
+                 mag_filter="Gmag"):
     """
     get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
@@ -98,9 +99,9 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     idx = mass_idx & age_idx & mh_idx & stage_idx
 
-    bp = models[idx][colname("G_BPmag")]
-    rp = models[idx][colname("G_RPmag")]
-    g = models[idx][colname("Gmag")]
+    bp = models[idx][colname(color_filter1)]
+    rp = models[idx][colname(color_filter2)]
+    g = models[idx][colname(mag_filter)]
     mass = models[idx][colname("m0")]
     mh = models[idx][colname("mh")]
     age = 10 ** models[idx][colname("log_age")] * 1e-9  # [Gyr]
@@ -434,3 +435,68 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
     polygon = Path(vertices)
 
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
+
+
+def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                       stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0):
+    """
+    get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                       stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0)
+
+    Get the polygon enclosed by two isochrones.
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    age : float, optional
+        Stellar track age of the track, in Gyr.
+    mh : float
+        Stellar track metallicity ([M/H]) of the track, in dex.
+    side : str, optional (default: "blue")
+        Which side of the track to include ("blue"/"red").
+    age_res : float, optional
+        Age resolution, in Gyr (default: 0.001 Gyr).
+    mh_res : float, optional
+        Metallicity resolution, in dex (default: 0.05 dex).
+    mass_res : float, optional
+        Mass resolution, in Msun (default: 0.007 Msun).
+    mass_max : float, optional
+        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).
+    stage : int, optional
+        Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).
+    bp_rp_min : float, optional
+        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).
+    bp_rp_max : float, optional
+        Maximal Gaia Gbp-Grp color to consider (default: np.inf).
+    bp_rp_shift : float, optional
+        How much to shift the Gaia Gbp-Grp color of the track (default: 0).
+    mg_shift : float, optional
+        How much to shift the Gaia G-band of the track (default: 0).
+
+    Returns
+    -------
+    polygon : Path object
+        The polygon enclosed by the two stellar evolutionary tracks.
+
+    """
+    BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
+                                       mass_max=mass_max, age_res=age_res,
+                                       mh_res=mh_res, mass_res=mass_res, stage=stage)[:4]
+
+    BP_RP = BP - RP + bp_rp_shift
+    idx = (bp_rp_min <= BP_RP) & (BP_RP <= bp_rp_max)
+    BP_RP = BP_RP[idx]
+    G = G[idx] + mg_shift
+    mass = mass[idx]
+
+    if side.lower() == "blue":
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[-np.inf, -np.inf], [np.max(G), np.min(G)]]).T))
+    elif side.lower() == "red":
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[np.inf, np.inf], [np.max(G), np.min(G)]]).T))
+    else:
+        print(f"Unimplemented side {side}!")
+
+    polygon = Path(vertices)
+
+    return polygon, BP_RP, G, mass

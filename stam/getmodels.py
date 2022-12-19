@@ -42,7 +42,14 @@ def read_parsec(files=None, path=None, config_file="config.ini"):
         files = [path + file for file in files]
 
     for i, file in enumerate(files):
-        iso = ascii.read(file, header_start=12)
+        # get the header line number
+        header_start = 0
+        for line in open(file):
+            li = line.strip()
+            if li.startswith("#"):
+                header_start += 1
+
+        iso = ascii.read(file, header_start=header_start)
         if i == 0:
             models = iso
         else:
@@ -87,4 +94,7 @@ def colname(param, model_name="parsec"):
     else:
         raise Exception(f"Unknown model {model_name}!")
 
-    return cols[param]
+    if param in cols:
+        return cols[param]
+    else:
+        return param

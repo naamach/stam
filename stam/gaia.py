@@ -3,7 +3,8 @@ from scipy.special import erf
 from astropy.io import fits
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
-from .gentracks import get_isotrack, get_isochrone_polygon
+from matplotlib.path import Path
+from .gentracks import get_isotrack, get_isochrone_polygon, get_isochrone_side
 from .plot import plot_cmd, plot_track
 
 
@@ -270,6 +271,172 @@ def get_gaia_isochrone_subsample(bp_rp, mg, models, age1, mh1, age2, mh2,
 
         plot_track(BP_RP1, G1, title=None, ax=ax, c="tab:red", label=f"[M/H]={mh1}")
         plot_track(BP_RP2, G2, title=None, ax=ax, c="tab:red", label=f"[M/H]={mh2}", linestyle="--")
+        if title is not None:
+            ax.set_title(title)
+        ax.legend()
+        plt.show()
+
+    return idx
+
+
+def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                       stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
+                       is_interpolate=True):
+    """
+    get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                       stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0)
+
+    Get the polygon enclosed by one side of an evolutionary track.
+
+    Parameters
+    ----------
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    age : float, optional
+        Stellar track age of the track, in Gyr.
+    mh : float
+        Stellar track metallicity ([M/H]) of the track, in dex.
+    side : str, optional (default: "blue")
+        Which side of the track to include ("blue"/"red").
+    age_res : float, optional
+        Age resolution, in Gyr (default: 0.001 Gyr).
+    mh_res : float, optional
+        Metallicity resolution, in dex (default: 0.05 dex).
+    mass_res : float, optional
+        Mass resolution, in Msun (default: 0.007 Msun).
+    mass_max : float, optional
+        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).
+    stage : int, optional
+        Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).
+    bp_rp_min : float, optional
+        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).
+    bp_rp_max : float, optional
+        Maximal Gaia Gbp-Grp color to consider (default: np.inf).
+    bp_rp_shift : float, optional
+        How much to shift the Gaia Gbp-Grp color of the track (default: 0).
+    mg_shift : float, optional
+        How much to shift the Gaia G-band of the track (default: 0).
+
+    Returns
+    -------
+    polygon : Path object
+        The polygon enclosed by one side of an evolutionary track.
+
+    """
+    BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
+                                   mass_max=mass_max, age_res=age_res,
+                                   mh_res=mh_res, mass_res=mass_res,
+                                   stage=stage, stage_min=stage_min, stage_max=stage_max)[:4]
+
+    BP_RP = BP - RP + bp_rp_shift
+    idx = (bp_rp_min <= BP_RP) & (BP_RP <= bp_rp_max)
+    BP_RP = BP_RP[idx]
+    G = G[idx] + mg_shift
+    mass = mass[idx]
+
+    if is_interpolate:
+        idx = np.argsort(G[-2:])
+        p = np.polyfit(G[-2:][idx], BP_RP[-2:][idx], 1)
+        p = np.poly1d(p)
+        extra_point = np.poly1d(np.array([-1]))
+        BP_RP = np.concatenate([BP_RP, extra_point])
+        G = np.concatenate([G, np.array([-1])])
+
+    if side.lower() == "blue":
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[-10, -10], [np.min(G), np.max(G)]]).T))
+    elif side.lower() == "red":
+        vertices = np.vstack((np.array([BP_RP, G]).T, np.array([[10, 10], [np.min(G), np.max(G)]]).T))
+    else:
+        print(f"Unimplemented side {side}!")
+
+    polygon = Path(vertices)
+
+    return polygon, BP_RP, G, mass
+
+
+def get_gaia_isochrone_side_subsample(bp_rp, mg, models, age, mh, side="blue",
+                                      age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                                      stage=1, stage_min=0, stage_max=np.inf,
+                                      bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0,
+                                      is_plot=False, title=None, ax=None):
+    """
+    get_gaia_isochrone_side_subsample(bp_rp, mg, models, age, mh, side="blue",
+                                      age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+                                      stage=1, stage_min=0, stage_max=np.inf,
+                                      bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0,
+                                      is_plot=False, title=None, ax=None)
+
+    Get the subsample of one side of an evolutionary track.
+
+    Parameters
+    ----------
+    bp_rp : array_like
+        Gaia Gbp-Grp color.
+    mg : array_like
+        Gaia G-band absolute magnitude (same size as `bp_rp`).
+    models : Table
+        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
+    age : float, optional
+        Stellar track age of the track, in Gyr.
+    mh : float
+        Stellar track metallicity ([M/H]) of the track, in dex.
+    side : str, optional
+        Which side ("blue"/"red") of the track to include (default: "blue").
+    age_res : float, optional
+        Age resolution, in Gyr (default: 0.001 Gyr).
+    mh_res : float, optional
+        Metallicity resolution, in dex (default: 0.05 dex).
+    mass_res : float, optional
+        Mass resolution, in Msun (default: 0.007 Msun).
+    mass_max : float, optional
+        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).
+    stage : int, optional
+        Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).
+    stage_min : int, optional
+        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).
+    stage_max : int, optional
+        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).
+    bp_rp_min : float, optional
+        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).
+    bp_rp_max : float, optional
+        Maximal Gaia Gbp-Grp color to consider (default: np.inf).
+    bp_rp_shift : float, optional
+        How much to shift the Gaia Gbp-Grp color of the track (default: 0).
+    mg_shift : float, optional
+        How much to shift the Gaia G-band of the track (default: 0).
+    is_plot: bool, optional
+        Plot Gaia CMD with highlighted region? (default: False).
+    title: str, optional
+        Plot title (default: None).
+    ax : Axes object, optional
+        Matplotlib Axes in which to plot (default: None).
+
+    Returns
+    -------
+    idx : array_like
+        Row indices of Gaia sources inside the subsample polygon.
+
+    """
+    polygon, BP_RP, G, mass = get_isochrone_side(models, age, mh, side=side, age_res=age_res, mh_res=mh_res,
+                                                 mass_max=mass_max, mass_res=mass_res,
+                                                 stage=stage, stage_min=stage_min, stage_max=stage_max,
+                                                 bp_rp_min=bp_rp_min, bp_rp_max=bp_rp_max, bp_rp_shift=bp_rp_shift,
+                                                 mg_shift=mg_shift)
+
+    idx = polygon.contains_points(np.array([bp_rp, mg]).T)
+    print(
+        f"{len(np.nonzero(idx)[0])} Gaia sources left out of {len(bp_rp)} ({len(np.nonzero(idx)[0]) / len(bp_rp) * 100:.1}%)")
+
+    if is_plot:
+        if ax is None:
+            ax = plot_cmd(bp_rp, mg)
+        else:
+            plot_cmd(bp_rp, mg, ax=ax)
+
+        patch = patches.PathPatch(polygon, facecolor='tab:red', linewidth=None, alpha=0.1)
+        ax.add_patch(patch)
+
+        plot_track(BP_RP, G, title=None, ax=ax, c="tab:red", label=f"[M/H]={mh}")
         if title is not None:
             ax.set_title(title)
         ax.legend()
