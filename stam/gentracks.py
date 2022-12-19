@@ -515,7 +515,8 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     if is_extrapolate:
         idx = np.argsort(G[-2:])
         p = np.polyfit(G[-2:][idx], BP_RP[-2:][idx], 1)
-        extra_point = np.poly1d(p)
+        p = np.poly1d(p)
+        extra_point = p(np.array([-1]))
         BP_RP = np.concatenate([BP_RP, extra_point])
         G = np.concatenate([G, np.array([-1])])
 
