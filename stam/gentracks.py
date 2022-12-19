@@ -50,6 +50,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).
     stage_max : int, optional
         Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).
+    color_filter1 : str, optional
+        Bluer band to use for the color calculation (default: `G_BPmag`).
+    color_filter2 : str, optional
+        Redder band to use for the color calculation (default: `G_RPmag`).
+    mag_filter : str, optional
+        Which band to use for the magnitude axis (default: `Gmag`).
 
     Returns
     -------
@@ -439,7 +445,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
 
 def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
-                       is_interpolate=True):
+                       is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
     get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
                        stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0)
@@ -466,6 +472,10 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
         Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).
     stage : int, optional
         Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).
+    stage_min : int, optional
+        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).
+    stage_max : int, optional
+        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).
     bp_rp_min : float, optional
         Minimal Gaia Gbp-Grp color to consider (default: -np.inf).
     bp_rp_max : float, optional
@@ -474,6 +484,15 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
         How much to shift the Gaia Gbp-Grp color of the track (default: 0).
     mg_shift : float, optional
         How much to shift the Gaia G-band of the track (default: 0).
+    is_extrapolate : bool, optional
+        Whether to extrapolate the massive part of the isochrone (default: True).
+    color_filter1 : str, optional
+        Bluer band to use for the color calculation (default: `G_BPmag`).
+    color_filter2 : str, optional
+        Redder band to use for the color calculation (default: `G_RPmag`).
+    mag_filter : str, optional
+        Which band to use for the magnitude axis (default: `Gmag`).
+
 
     Returns
     -------
@@ -484,7 +503,8 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
                                    mass_max=mass_max, age_res=age_res,
                                    mh_res=mh_res, mass_res=mass_res,
-                                   stage=stage, stage_min=stage_min, stage_max=stage_max)[:4]
+                                   stage=stage, stage_min=stage_min, stage_max=stage_max,
+                                   color_filter1=color_filter1, color_filter2=color_filter2, mag_filter=mag_filter)[:4]
 
     BP_RP = BP - RP + bp_rp_shift
     idx = (bp_rp_min <= BP_RP) & (BP_RP <= bp_rp_max)
@@ -492,11 +512,10 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     G = G[idx] + mg_shift
     mass = mass[idx]
 
-    if is_interpolate:
+    if is_extrapolate:
         idx = np.argsort(G[-2:])
         p = np.polyfit(G[-2:][idx], BP_RP[-2:][idx], 1)
-        p = np.poly1d(p)
-        extra_point = np.poly1d(np.array([-1]))
+        extra_point = np.poly1d(p)
         BP_RP = np.concatenate([BP_RP, extra_point])
         G = np.concatenate([G, np.array([-1])])
 
