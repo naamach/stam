@@ -54,6 +54,67 @@ def calc_mg_uncertainty(gaia):
     return mg_error
 
 
+def calc_color_uncertainty(gaia, color_filter1="u", color_filter2="z", photsystem="sdss"):
+    """
+    calc_color_uncertainty(gaia, color_filter1="u", color_filter2="z", photsystem="sdss")
+
+    Calculate the Gaia color uncertainty in arbitrary colors, using data from the `gaiadr3.synthetic_photometry_gspc`
+    table.
+
+    Parameters
+    ----------
+    gaia : FITS table
+        Gaia table.
+    color_filter1 : str, optional
+        Bluer band to use for the color calculation (default: `u`).
+    color_filter2 : str, optional
+        Redder band to use for the color calculation (default: `z`).
+    mag_filter : str, optional
+        Which band to use for the magnitude axis (default: `Gmag`).
+    photsystem : str, optional
+        The photometric system of the filters (default: `sdss`).
+
+    Returns
+    -------
+    color_error : array_like
+        Gaia uncertainty of the selected color.
+
+    """
+    color_error = 2.5 * np.log10(np.e) * np.sqrt(
+        (gaia[f'{color_filter1}_{photsystem}_flux_error'] / gaia[f'{color_filter1}_{photsystem}_flux']) ** 2 +
+        (gaia[f'{color_filter2}_{photsystem}_flux_error'] / gaia[f'{color_filter2}_{photsystem}_flux']) ** 2)
+
+    return color_error
+
+
+def calc_absmag_uncertainty(gaia, mag_filter="g", photsystem="sdss"):
+    """
+    calc_absmag_uncertainty(gaia)
+
+    Calculate the Gaia absolute magnitude uncertainty in an arbitrary band, using data from the `gaiadr3.synthetic_photometry_gspc`
+    table.
+
+    Parameters
+    ----------
+    gaia : FITS table
+        Gaia table.
+    mag_filter : str, optional
+        Which band to use for the magnitude axis (default: `g`).
+    photsystem : str, optional
+        The photometric system of the filters (default: `sdss`).
+
+    Returns
+    -------
+    mg_error : array_like
+        Gaia absolute magnitude uncertainty in the selected band.
+    """
+
+    absmag_error = 2.5 * np.log10(np.e) * np.sqrt(
+        (gaia[f'{mag_filter}_{photsystem}_flux_error'] / gaia[f'{mag_filter}_{photsystem}_flux']) ** 2 + 4 / gaia['parallax_over_error'] ** 2)
+
+    return absmag_error
+
+
 def calc_extinction(b, parallax, z_sun=1.4, sigma_dust=150, R_G=2.740, R_BP=3.374, R_RP=2.035):
     """
     calc_extinction(b, parallax, z_sun=1.4, sigma_dust=150, R_G=2.740, R_BP=3.374, R_RP=2.035)
