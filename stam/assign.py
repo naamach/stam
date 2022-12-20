@@ -149,7 +149,7 @@ def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polyg
     score = np.zeros(len(color))
     for i in tqdm(range(len(color))):  # for each gaia source
         # skip if NaN
-        if np.isnan(color[i]) | np.isnan(mag[i]):
+        if np.any(np.isnan([color[i], mag[i]])):
             score[i] = np.nan
             continue
         mean = [color[i], mag[i]]
