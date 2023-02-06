@@ -7,6 +7,6 @@ Contents
 
 .. toctree::
 
-   usage
+   README
    api
 
