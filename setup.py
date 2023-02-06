@@ -10,7 +10,7 @@ setup(name='stam',
       url='https://github.com/naamach/stam',
       license='LICENSE.txt',
       packages=setuptools.find_packages(),
-      install_requires=['astropy', 'configparser', 'numpy', 'scipy', 'geomdl', 'matplotlib'],
+      install_requires=['astropy', 'configparser', 'numpy', 'scipy', 'tqdm', 'geomdl', 'matplotlib'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Environment :: Console',
