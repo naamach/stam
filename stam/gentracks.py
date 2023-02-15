@@ -9,7 +9,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
-                 mag_filter="Gmag"):
+                 mag_filter="Gmag", return_idx=False):
     """
     get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
@@ -56,6 +56,8 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Redder band to use for the color calculation (default: `G_RPmag`).
     mag_filter : str, optional
         Which band to use for the magnitude axis (default: `Gmag`).
+    return_idx : bool, optional
+        If true, return also the indices of the relevant rows in `models` (default: False).
 
     Returns
     -------
@@ -71,6 +73,8 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Chosen stellar evolution track metallicity ([M/H]), in dex
     age : array_like
         Chosen stellar evolution track age, in Gyr
+    idx : array_like
+        The indices of the relevant rows in `models` (if `return_idx=True`).
     """
 
     if "mass" in params:
@@ -127,7 +131,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     age = age[sort_idx]
     stage = stage[sort_idx]
 
-    return bp, rp, g, mass, mh, age, stage
+    if return_idx:
+        idx = np.where(idx)[0]
+        idx = idx[sort_idx]
+        return bp, rp, g, mass, mh, age, stage, idx
+    else:
+        return bp, rp, g, mass, mh, age, stage
 
 
 def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs):

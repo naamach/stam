@@ -2,7 +2,7 @@ from distutils.core import setup
 import setuptools
 
 setup(name='stam',
-      version='0.2.2',
+      version='0.2.3',
       author="Na'ama Hallakoun",
       author_email='naama.hallakoun@weizmann.ac.il',
       description='Stellar-Track-based Assignment of Mass',
