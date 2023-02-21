@@ -1,11 +1,11 @@
 import time
-from tqdm import tqdm
+from tqdm import trange
 import numpy as np
 from . import rbf, griddata, nurbs
 
 
 def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass", interp_fun="rbf",
-                 binary_polygon=None, **kwargs):
+                 binary_polygon=None, show_progress_bar=True, **kwargs):
     """
     assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass", interp_fun="rbf",
                  binary_polygon=None, **kwargs)
@@ -33,6 +33,8 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
         Which interpolation method to use (options: "rbf", "griddata", "nurbs"; default: "rbf").
     binary_polygon : Path object, optional
         The polygon defining the equal-mass binary region on the HR-diagram (default: None).
+    show_progress_bar : bool, optional
+        If true, show progress bar (default: True).
 
     Returns
     -------
@@ -68,8 +70,13 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
         binary_param_error = np.zeros(len(color))*np.nan
         weight = np.ones(len(color))
 
+    if show_progress_bar:
+        iterations = trange(range(len(color)))
+    else:
+        iterations = range(len(color))
+
     t = time.time()
-    for i in tqdm(range(len(color))):  # for each gaia source
+    for i in iterations:  # for each gaia source
         mean = [color[i], mag[i]]
         cov = [[color_error[i], 0], [0, mag_error[i]]]
 
@@ -119,7 +126,7 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
         return param_mean, param_error, binary_param_mean, binary_param_error, weight
 
 
-def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10):
+def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10, show_progress_bar=True):
     """
     assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10)
 
@@ -140,6 +147,8 @@ def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polyg
     n_realizations : int, optional
         Number of realizations to draw for each star, from a 2D-Gaussian distribution around the color-magnitude
         position of the star (default: 10).
+    show_progress_bar : bool, optional
+        If true, show progress bar (default: True).
 
     Returns
     -------
@@ -147,7 +156,12 @@ def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polyg
 
     """
     score = np.zeros(len(color))
-    for i in tqdm(range(len(color))):  # for each gaia source
+
+    if show_progress_bar:
+        iterations = trange(range(len(color)))
+    else:
+        iterations = range(len(color))
+    for i in iterations:  # for each gaia source
         # skip if NaN
         if np.any(np.isnan([color[i], mag[i]])):
             score[i] = np.nan
@@ -162,7 +176,7 @@ def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polyg
     return score
 
 
-def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realizations=10, thresh=0.5):
+def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realizations=10, thresh=0.5, show_progress_bar=True):
     """
     assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realizations=10, thresh=0.5)
 
@@ -185,6 +199,8 @@ def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realization
         position of the star (default: 10).
     thresh : float, optional
         Polygon assignment minimal threshold score (default: 0.5).
+    show_progress_bar : bool, optional
+        If true, show progress bar (default: True).
 
     Returns
     -------
@@ -192,7 +208,8 @@ def assign_to_polygon(color, color_error, mag, mag_error, polygon, n_realization
         Indices of stars inside the polygon.
     """
 
-    score = assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=n_realizations)
+    score = assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon,
+                                               n_realizations=n_realizations, show_progress_bar=show_progress_bar)
     inside_idx = score >= thresh
 
     return inside_idx
