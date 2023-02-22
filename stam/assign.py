@@ -1,5 +1,5 @@
 import time
-from tqdm import trange
+from tqdm import tqdm
 import numpy as np
 from . import rbf, griddata, nurbs
 
@@ -71,7 +71,7 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
         weight = np.ones(len(color))
 
     if show_progress_bar:
-        iterations = trange(range(len(color)))
+        iterations = tqdm(range(len(color)))
     else:
         iterations = range(len(color))
 
@@ -158,7 +158,7 @@ def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polyg
     score = np.zeros(len(color))
 
     if show_progress_bar:
-        iterations = trange(range(len(color)))
+        iterations = tqdm(range(len(color)))
     else:
         iterations = range(len(color))
     for i in iterations:  # for each gaia source
