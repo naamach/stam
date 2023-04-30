@@ -3,7 +3,6 @@ from tqdm import tqdm
 import numpy as np
 from . import rbf, griddata, nurbs
 
-
 def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass", interp_fun="rbf",
                  binary_polygon=None, show_progress_bar=True, **kwargs):
     """

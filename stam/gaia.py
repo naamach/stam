@@ -185,6 +185,36 @@ def calc_gaia_extinction(gaia, **kwargs):
     return e_bprp, A_G
 
 
+def get_extinction_in_gaia_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035):
+    """
+    get_extinction_in_gaia_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035)
+
+    Convert the extinction and reddening to the Gaia bands.
+    R coefficients from Casagrande & VandenBerg (2018), table 2:
+    https://ui.adsabs.harvard.edu/abs/2018MNRAS.479L.102C/abstract
+
+    Parameters
+    ----------
+    e_bv : float
+        The E(B-V) value in mag.
+    R_G : float, optional
+    R_BP : float, optional
+    R_RP : float, optional
+
+    Returns
+    -------
+    e_bprp : array_like
+        Reddening in the Gaia bands, E(Gbp-Grp).
+    A_G : array_like
+        Gaia G-band extinction, A_G = R_G * E(Gbp-Grp).
+    """
+
+    A_G = e_bv * R_G
+    e_bprp = (R_BP - R_RP) * e_bv
+
+    return e_bprp, A_G
+
+
 def read_gaia_data(file):
     """
     read_gaia_data(file)

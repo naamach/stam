@@ -17,6 +17,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                  stage_min=0, stage_max=np.inf)
 
     Get a specific stellar evolution track, with two out of three parameters fixed (mass, age, or metallicity).
+    NOTE: This function doesn't interpolate between tracks, just return all tracks within the mass/age/metallicity bins.
 
     Parameters
     ----------
