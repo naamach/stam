@@ -9,7 +9,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
-                 mag_filter="Gmag", return_idx=False):
+                 mag_filter="Gmag", return_idx=False, return_table=False):
     """
     get_isotrack(models, vals, params=("mass", "mh"),
                  mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
@@ -59,6 +59,8 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Which band to use for the magnitude axis (default: `Gmag`).
     return_idx : bool, optional
         If true, return also the indices of the relevant rows in `models` (default: False).
+    return_table : bool, optional
+        If true, return tracks in `astropy` `Table` format (default: False).
 
     Returns
     -------
@@ -132,12 +134,21 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     age = age[sort_idx]
     stage = stage[sort_idx]
 
+    if return_table:
+        tracks = Table([mass, bp - rp, g, mh, stage, age], names=('mass', 'bp_rp', 'mg', 'mh', 'stage', 'age'))
+
     if return_idx:
         idx = np.where(idx)[0]
         idx = idx[sort_idx]
-        return bp, rp, g, mass, mh, age, stage, idx
+        if return_table:
+            return tracks, idx
+        else:
+            return bp, rp, g, mass, mh, age, stage, idx
     else:
-        return bp, rp, g, mass, mh, age, stage
+        if return_table:
+            return tracks
+        else:
+            return bp, rp, g, mass, mh, age, stage
 
 
 def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs):
@@ -540,4 +551,3 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     polygon = Path(vertices)
 
     return polygon, BP_RP, G, mass
-
