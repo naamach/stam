@@ -327,7 +327,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
 
     if track_type == "isotrack":
         log.info("Using isotrack...")
-        tracks = get_isotrack(models, vals, params=params, return_table=True, **kwargs)
+        tracks = get_isotrack(models, vals, params=params, return_table=True, sort_by="age", **kwargs)
     else:
         log.error(f"Using {track_type} not yet implemented!")
 

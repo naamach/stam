@@ -6,7 +6,7 @@ from .getmodels import colname
 
 
 def get_isotrack(models, vals, params=("mass", "mh"),
-                 mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
+                 mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1, sort_by=None,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
                  mag_filter="Gmag", return_idx=False, return_table=False):
@@ -158,12 +158,20 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     age = 10 ** models[idx][colname("log_age")] * 1e-9  # [Gyr]
     stage = models[idx][colname("phase")]
 
-    if "mass" not in params:
-        sort_idx = np.argsort(mass)
-    elif "age" not in params:
-        sort_idx = np.argsort(age)
-    elif "mh" not in params:
-        sort_idx = np.argsort(mh)
+    if sort_by is None:
+        if "mass" not in params:
+            sort_idx = np.argsort(mass)
+        elif "age" not in params:
+            sort_idx = np.argsort(age)
+        elif "mh" not in params:
+            sort_idx = np.argsort(mh)
+    else:
+        if sort_by == "mass":
+            sort_idx = np.argsort(mass)
+        elif sort_by == "age":
+            sort_idx = np.argsort(age)
+        elif sort_by == "mh":
+            sort_idx = np.argsort(mh)
     bp = bp[sort_idx]
     rp = rp[sort_idx]
     g = g[sort_idx]
