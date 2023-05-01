@@ -362,7 +362,8 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
                                             csv_format=csv_format,
                                             n_realizations=n_realizations, interp_fun=interp_fun,
                                             binary_polygon=None, **kwargs)
-        output.append([param_mean, param_error])
+        output.append(param_mean)
+        output.append(param_error)
 
     if get_excess is not None:
         log.info(f"Calculating {get_excess}-excess probability...")
