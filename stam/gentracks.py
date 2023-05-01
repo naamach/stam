@@ -83,13 +83,19 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     if "mass" in params:
         mass = vals[params.index("mass")]
         mass_idx = ((mass - mass_res) <= models[colname("m0")]) & (models[colname("m0")] < (mass + mass_res))
+        if ~np.any(mass_idx):
+            raise Exception(f"No tracks found for mass {mass}+/-{mass_res} Msun!")
     else:
         mass_idx = (mass_min - mass_res <= models[colname("m0")]) & (models[colname("m0")] <= mass_max + mass_res)
+        if ~np.any(mass_idx):
+            raise Exception(f"No tracks found in mass range {mass_min}-{mass_max} Msun!")
 
     if "age" in params:
         age = vals[params.index("age")]
         age_idx = (np.log10((np.maximum(age - age_res, 0)) * 1e9) <= models[colname("log_age")]) & \
                   (models[colname("log_age")] < np.log10((age + age_res) * 1e9))
+        if ~np.any(age_idx):
+            raise Exception(f"No tracks found for age {age}+/-{age_res} Gyr!")
     else:
         if age_min > age_res:
             age_idx = (np.log10((age_min - age_res) * 1e9) <= models[colname("log_age")]) & \
@@ -98,17 +104,27 @@ def get_isotrack(models, vals, params=("mass", "mh"),
             # usually relevant to the pre-MS stage
             age_idx = (np.log10(age_min * 1e9) <= models[colname("log_age")]) & \
                       (models[colname("log_age")] <= np.log10((age_max + age_res) * 1e9))
+        if ~np.any(age_idx):
+            raise Exception(f"No tracks found in age range {age_min}-{age_max} Gyr!")
 
     if "mh" in params:
         mh = vals[params.index("mh")]
         mh_idx = ((mh - mh_res) <= models[colname("mh")]) & (models[colname("mh")] < (mh + mh_res))
+        if ~np.any(mh_idx):
+            raise Exception(f"No tracks found for metallicity {mh}+/-{mh_res}!")
     else:
         mh_idx = (mh_min - mh_res <= models[colname("m0")]) & (models[colname("m0")] <= mh_max + mh_res)
+        if ~np.any(mh_idx):
+            raise Exception(f"No tracks found in metallicity range {mh_min}-{mh_max}!")
 
     if stage is not None:
         stage_idx = models[colname("phase")] == stage  # 1 = main sequence
+        if ~np.any(stage_idx):
+            raise Exception(f"No tracks found for stage {stage}!")
     else:
         stage_idx = (stage_min <= models[colname("phase")]) & (models[colname("phase")] <= stage_max)
+        if ~np.any(stage_idx):
+            raise Exception(f"No tracks found in stage range {stage_min}-{stage_max}!")
 
     idx = mass_idx & age_idx & mh_idx & stage_idx
 
@@ -145,6 +161,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         output.append(idx)
 
     return output
+
 
 def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs):
     """
