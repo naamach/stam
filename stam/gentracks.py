@@ -28,9 +28,9 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     params : tuple (of length 2), optional
         Fixed parameters names (default: ("mass", "mh")).
     mass_res : float, optional
-        Mass resolution, in Msun (default: 0.007 Msun)
+        Mass resolution, in Msun (default: 0.007 Msun). If negative - treat as fractional.
     age_res : float, optional
-        Age resolution, in Gyr (default: 0.1 Gyr)
+        Age resolution, in Gyr (default: 0.1 Gyr). If negative - treat as fractional.
     mh_res : float, optional
         Metallicity resolution, in dex (default: 0.05 dex)
     stage : int, optional
@@ -82,28 +82,50 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     if "mass" in params:
         mass = vals[params.index("mass")]
-        mass_idx = ((mass - mass_res) <= models[colname("m0")]) & (models[colname("m0")] < (mass + mass_res))
+        if mass_res < 0:
+            # treat as fractional
+            mass_res = -mass_res
+            mass_idx = ((mass*(1 - mass_res)) <= models[colname("m0")]) & (models[colname("m0")] < (mass*(1 + mass_res)))
+        else:
+            mass_idx = ((mass - mass_res) <= models[colname("m0")]) & (models[colname("m0")] < (mass + mass_res))
         if ~np.any(mass_idx):
             raise Exception(f"No tracks found for mass {mass}+/-{mass_res} Msun!")
     else:
-        mass_idx = (mass_min - mass_res <= models[colname("m0")]) & (models[colname("m0")] <= mass_max + mass_res)
+        if mass_res < 0:
+            # treat as fractional
+            mass_res = -mass_res
+            mass_idx = (mass_min*(1 - mass_res) <= models[colname("m0")]) & (models[colname("m0")] <= mass_max*(1 + mass_res))
+        else:
+            mass_idx = (mass_min - mass_res <= models[colname("m0")]) & (models[colname("m0")] <= mass_max + mass_res)
         if ~np.any(mass_idx):
             raise Exception(f"No tracks found in mass range {mass_min}-{mass_max} Msun!")
 
     if "age" in params:
         age = vals[params.index("age")]
-        age_idx = (np.log10((np.maximum(age - age_res, 0)) * 1e9) <= models[colname("log_age")]) & \
-                  (models[colname("log_age")] < np.log10((age + age_res) * 1e9))
+        if age_res < 0:
+            # treat as fractional
+            age_res = -age_res
+            age_idx = (np.log10((np.maximum(age*(1 - age_res), 0)) * 1e9) <= models[colname("log_age")]) & \
+                      (models[colname("log_age")] < np.log10((age*(1 + age_res)) * 1e9))
+        else:
+            age_idx = (np.log10((np.maximum(age - age_res, 0)) * 1e9) <= models[colname("log_age")]) & \
+                      (models[colname("log_age")] < np.log10((age + age_res) * 1e9))
         if ~np.any(age_idx):
             raise Exception(f"No tracks found for age {age}+/-{age_res} Gyr!")
     else:
-        if age_min > age_res:
-            age_idx = (np.log10((age_min - age_res) * 1e9) <= models[colname("log_age")]) & \
-                      (models[colname("log_age")] <= np.log10((age_max + age_res) * 1e9))
+        if age_res < 0:
+            # treat as fractional
+            age_res = -age_res
+            age_idx = (np.log10((age_min*(1 - age_res)) * 1e9) <= models[colname("log_age")]) & \
+                      (models[colname("log_age")] <= np.log10((age_max*(1 + age_res)) * 1e9))
         else:
-            # usually relevant to the pre-MS stage
-            age_idx = (np.log10(age_min * 1e9) <= models[colname("log_age")]) & \
-                      (models[colname("log_age")] <= np.log10((age_max + age_res) * 1e9))
+            if age_min > age_res:
+                age_idx = (np.log10((age_min - age_res) * 1e9) <= models[colname("log_age")]) & \
+                          (models[colname("log_age")] <= np.log10((age_max + age_res) * 1e9))
+            else:
+                # usually relevant to the pre-MS stage
+                age_idx = (np.log10(age_min * 1e9) <= models[colname("log_age")]) & \
+                          (models[colname("log_age")] <= np.log10((age_max + age_res) * 1e9))
         if ~np.any(age_idx):
             raise Exception(f"No tracks found in age range {age_min}-{age_max} Gyr!")
 
@@ -476,7 +498,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
 
 
-def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
                        is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
@@ -534,7 +556,7 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
 
     """
     BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
-                                   mass_max=mass_max, age_res=age_res,
+                                   mass_min=mass_min, mass_max=mass_max, age_res=age_res,
                                    mh_res=mh_res, mass_res=mass_res,
                                    stage=stage, stage_min=stage_min, stage_max=stage_max,
                                    color_filter1=color_filter1, color_filter2=color_filter2, mag_filter=mag_filter)[:4]
