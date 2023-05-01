@@ -135,21 +135,16 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     stage = stage[sort_idx]
 
     if return_table:
-        tracks = Table([mass, bp - rp, g, mh, stage, age], names=('mass', 'bp_rp', 'mg', 'mh', 'stage', 'age'))
+        output = Table([mass, bp - rp, g, mh, stage, age], names=('mass', 'bp_rp', 'mg', 'mh', 'stage', 'age'))
+    else:
+        output = [bp, rp, g, mass, mh, age, stage]
 
     if return_idx:
         idx = np.where(idx)[0]
         idx = idx[sort_idx]
-        if return_table:
-            return tracks, idx
-        else:
-            return bp, rp, g, mass, mh, age, stage, idx
-    else:
-        if return_table:
-            return tracks
-        else:
-            return bp, rp, g, mass, mh, age, stage
+        output.append(idx)
 
+    return output
 
 def get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs):
     """

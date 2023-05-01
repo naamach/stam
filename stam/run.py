@@ -5,8 +5,8 @@ from .utils import get_config, init_log, close_log
 from .gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction, get_gaia_subsample, \
     get_gaia_isochrone_subsample, get_extinction_in_gaia_band
 from .getmodels import read_parsec
-from .gentracks import get_combined_isomasses, get_isochrone_polygon, get_isotrack
-from .assign import assign_param
+from .gentracks import get_combined_isomasses, get_isochrone_polygon, get_isotrack, get_isochrone_side
+from .assign import assign_param, assign_score_based_on_cmd_position
 
 
 def get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=None, is_save=True, log=None,
@@ -296,10 +296,12 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sa
         return m_mean, m_error, binary_m_mean, binary_m_error, m_weight, mh_mean, mh_error, binary_mh_mean, binary_mh_error, mh_weight
 
 
-def get_param_from_isotrack(sources, vals=[5, 0], params=("age", "mh"), suffix=None, is_save=True,
-                            output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
-                            path_models='./PARSEC/', correct_extinction=True, reddening_key="av",
-                            color_excess_key="e_bv", use_reddening_key=True, **kwargs):
+def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", assign_param="mass", get_excess=None,
+             suffix=None, is_save=True, color_filter1="G_BP", color_filter2="G_RP", mag_filter="G",
+             is_extrapolate=True,
+             output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
+             models='./PARSEC/', correct_extinction=True, reddening_key="av",
+             color_excess_key="e_bv", use_reddening_key=True, **kwargs):
     """
 
 
@@ -317,20 +319,17 @@ def get_param_from_isotrack(sources, vals=[5, 0], params=("age", "mh"), suffix=N
 
     log = init_log(time.strftime("%Y%m%d_%H%M%S", time.gmtime()), config_file=None)
 
-    if ~("mass" in params):
-        param = "mass"
-    elif ~("age" in params):
-        param = "age"
-    elif ~("mh" in params):
-        param = "mh"
-    else:
-        log.error(f"Nothing to assign!")
-
     # get tracks
-    log.info("Using PARSEC evolutionary tracks...")
-    models = read_parsec(path=path_models)
+    if isinstance(models, str):
+        log.info("Using PARSEC evolutionary tracks...")
+        models = read_parsec(path=models)
+        # else assume models are already loaded
 
-    tracks = get_isotrack(models, vals, params=params, **kwargs)
+    if track_type == "isotrack":
+        log.info("Using isotrack...")
+        tracks = get_isotrack(models, vals, params=params, **kwargs)
+    else:
+        log.error(f"Using {track_type} not yet implemented!")
 
     # calculate color and magnitude uncertainties
     if ~("mg" in sources.colnames):
@@ -352,15 +351,36 @@ def get_param_from_isotrack(sources, vals=[5, 0], params=("age", "mh"), suffix=N
         mg = mg - A_G
         suffix += "_extinction"
 
+    output = []
+
     # assign param
-    log.info(f"Assigning {param} using {n_realizations} realizations...")
-    param_mean, param_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param=param, suffix=suffix,
-                                        is_save=is_save,
-                                        log=log, output_type=output_type, output_path=output_path,
-                                        csv_format=csv_format,
-                                        n_realizations=n_realizations, interp_fun=interp_fun,
-                                        binary_polygon=None, **kwargs)
+    if assign_param is not None:
+        log.info(f"Assigning {assign_param} using {n_realizations} realizations...")
+        param_mean, param_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param=assign_param, suffix=suffix,
+                                            is_save=is_save,
+                                            log=log, output_type=output_type, output_path=output_path,
+                                            csv_format=csv_format,
+                                            n_realizations=n_realizations, interp_fun=interp_fun,
+                                            binary_polygon=None, **kwargs)
+        output.append([param_mean, param_error])
+
+    if get_excess is not None:
+        log.info(f"Calculating {get_excess}-excess probability...")
+        # define the red-excess region on the CMD
+        polygon, iso_color, iso_mag, mass = get_isochrone_side(models, vals[0], vals[1],
+                                                               side=get_excess, is_extrapolate=is_extrapolate,
+                                                               mh_res=0.05,
+                                                               color_filter1=color_filter1 + "mag",
+                                                               color_filter2=color_filter2 + "mag",
+                                                               mag_filter=mag_filter + "mag", **kwargs)
+
+        # calculate the excess probability
+        excess_prob = assign_score_based_on_cmd_position(bp_rp, bp_rp_error, mg,
+                                                         mg_error, polygon,
+                                                         n_realizations=n_realizations,
+                                                         show_progress_bar=False)
+        output.append(excess_prob)
 
     close_log(log)
 
-    return param_mean, param_error
+    return output
