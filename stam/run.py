@@ -298,7 +298,7 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sa
 
 def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", assign_param="mass", get_excess=None,
              suffix=None, is_save=True, color_filter1="G_BP", color_filter2="G_RP", mag_filter="G",
-             is_extrapolate=True,
+             is_extrapolate=True, rbf_func="linear",
              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
              models='./PARSEC/', correct_extinction=True, reddening_key="av",
              color_excess_key="e_bv", use_reddening_key=True, **kwargs):
@@ -356,12 +356,17 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
     # assign param
     if assign_param is not None:
         log.info(f"Assigning {assign_param} using {n_realizations} realizations...")
+
+        if interp_fun == "rbf":
+            kwargs_interp = {"function": rbf_func}
+        else:
+            kwargs_interp = {}
         param_mean, param_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param=assign_param, suffix=suffix,
                                             is_save=is_save,
                                             log=log, output_type=output_type, output_path=output_path,
                                             csv_format=csv_format,
                                             n_realizations=n_realizations, interp_fun=interp_fun,
-                                            binary_polygon=None, **kwargs)
+                                            binary_polygon=None, **kwargs_interp)
         output.append(param_mean)
         output.append(param_error)
 
