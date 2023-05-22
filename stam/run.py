@@ -343,7 +343,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
     if correct_extinction:
         log.info("Applying extinction correction...")
         if use_reddening_key:
-            e_bv = 3.1 * sources[reddening_key]
+            e_bv = sources[reddening_key] / 3.1
         else:
             e_bv = sources[color_excess_key]
         e_bprp, A_G = get_extinction_in_gaia_band(e_bv)
