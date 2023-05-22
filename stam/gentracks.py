@@ -6,7 +6,7 @@ from .getmodels import colname
 
 
 def get_isotrack(models, vals, params=("mass", "mh"),
-                 mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1, sort_by=None,
+                 mass_res=0.007, age_res=0.1, log_age_res=0.05, mh_res=0.05, stage=1, sort_by=None,
                  mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
                  mag_filter="Gmag", return_idx=False, return_table=False):
@@ -31,6 +31,8 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Mass resolution, in Msun (default: 0.007 Msun). If negative - treat as fractional.
     age_res : float, optional
         Age resolution, in Gyr (default: 0.1 Gyr). If negative - treat as fractional.
+    log_age_res : float, optional
+        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).
     mh_res : float, optional
         Metallicity resolution, in dex (default: 0.05 dex)
     stage : int, optional
@@ -107,11 +109,19 @@ def get_isotrack(models, vals, params=("mass", "mh"),
             age_res = -age_res
             age_idx = (np.log10((np.maximum(age*(1 - age_res), 0)) * 1e9) <= models[colname("log_age")]) & \
                       (models[colname("log_age")] < np.log10((age*(1 + age_res)) * 1e9))
+            if ~np.any(age_idx):
+                raise Exception(f"No tracks found for age {age}Gyr+/-{age_res*100}%!")
         else:
             age_idx = (np.log10((np.maximum(age - age_res, 0)) * 1e9) <= models[colname("log_age")]) & \
                       (models[colname("log_age")] < np.log10((age + age_res) * 1e9))
+            if ~np.any(age_idx):
+                raise Exception(f"No tracks found for age {age}+/-{age_res} Gyr!")
+    elif "log_age" in params:
+        log_age = vals[params.index("log_age")]
+        age_idx = ((np.maximum(log_age - log_age_res, 0)) <= models[colname("log_age")]) & \
+                  (models[colname("log_age")] < (log_age + log_age_res))
         if ~np.any(age_idx):
-            raise Exception(f"No tracks found for age {age}+/-{age_res} Gyr!")
+            raise Exception(f"No tracks found for log(age) {log_age}+/-{log_age_res}!")
     else:
         if age_res < 0:
             # treat as fractional
