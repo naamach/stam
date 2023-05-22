@@ -373,7 +373,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
     if get_excess is not None:
         log.info(f"Calculating {get_excess}-excess probability...")
         # define the red-excess region on the CMD
-        polygon, iso_color, iso_mag, mass = get_isochrone_side(models, vals[0], vals[1],
+        polygon, iso_color, iso_mag, mass = get_isochrone_side(models, vals, params,
                                                                side=get_excess, is_extrapolate=is_extrapolate,
                                                                mh_res=0.05,
                                                                color_filter1=color_filter1 + "mag",

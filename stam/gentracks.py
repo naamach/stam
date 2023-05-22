@@ -518,7 +518,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, log_age_r
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
 
 
-def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
+def get_isochrone_side(models, vals, params, side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
                        is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
@@ -531,10 +531,10 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, log_age_res=
     ----------
     models : Table
         All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.
-    age : float, optional
-        Stellar track age of the track, in Gyr.
-    mh : float
-        Stellar track metallicity ([M/H]) of the track, in dex.
+    vals : array_like (of length 2)
+        Values of the fixed parameters (units: [mass] = Msun, [age] = Gyr, [mh] = dex).
+    params : tuple (of length 2), optional
+        Fixed parameters names (default: ("mass", "mh")).
     side : str, optional (default: "blue")
         Which side of the track to include ("blue"/"red").
     age_res : float, optional
@@ -577,7 +577,7 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, log_age_res=
         The polygon enclosed by one side of an evolutionary track.
 
     """
-    BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
+    BP, RP, G, mass = get_isotrack(models, vals, params=params,
                                    mass_min=mass_min, mass_max=mass_max, age_res=age_res, log_age_res=log_age_res,
                                    mh_res=mh_res, mass_res=mass_res,
                                    stage=stage, stage_min=stage_min, stage_max=stage_max,
