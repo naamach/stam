@@ -437,7 +437,7 @@ def get_combined_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, mh_pre_
     return tracks
 
 
-def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,
+def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_max=1.2,
                           stage1=1, stage2=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift1=0, bp_rp_shift2=0,
                           mg_shift1=0, mg_shift2=0):
     """
@@ -460,7 +460,9 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
     mh2 : float
         Stellar track metallicity ([M/H]) of the second track, in dex.
     age_res : float, optional
-        Age resolution, in Gyr (default: 0.001 Gyr).
+        Age resolution, in Gyr (default: 0.001 Gyr). If negative - treat as fractional.
+    log_age_res : float, optional
+        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).
     mh_res : float, optional
         Metallicity resolution, in dex (default: 0.05 dex).
     mass_res : float, optional
@@ -491,10 +493,10 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
 
     """
     BP1, RP1, G1, mass1 = get_isotrack(models, [age1, mh1], params=("age", "mh"),
-                                       mass_max=mass_max, age_res=age_res,
+                                       mass_max=mass_max, age_res=age_res, log_age_res=log_age_res,
                                        mh_res=mh_res, mass_res=mass_res, stage=stage1)[:4]
     BP2, RP2, G2, mass2 = get_isotrack(models, [age2, mh2], params=("age", "mh"),
-                                       mass_max=mass_max, age_res=age_res,
+                                       mass_max=mass_max, age_res=age_res, log_age_res=log_age_res,
                                        mh_res=mh_res, mass_res=mass_res, stage=stage2)[:4]
 
     BP_RP1 = BP1 - RP1 + bp_rp_shift1
@@ -516,7 +518,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
 
 
-def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
+def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
                        is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
@@ -536,7 +538,9 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
     side : str, optional (default: "blue")
         Which side of the track to include ("blue"/"red").
     age_res : float, optional
-        Age resolution, in Gyr (default: 0.001 Gyr).
+        Age resolution, in Gyr (default: 0.001 Gyr). If negative - treat as fractional.
+    log_age_res : float, optional
+        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).
     mh_res : float, optional
         Metallicity resolution, in dex (default: 0.05 dex).
     mass_res : float, optional
@@ -574,7 +578,7 @@ def get_isochrone_side(models, age, mh, side="blue", age_res=0.001, mh_res=0.05,
 
     """
     BP, RP, G, mass = get_isotrack(models, [age, mh], params=("age", "mh"),
-                                   mass_min=mass_min, mass_max=mass_max, age_res=age_res,
+                                   mass_min=mass_min, mass_max=mass_max, age_res=age_res, log_age_res=log_age_res,
                                    mh_res=mh_res, mass_res=mass_res,
                                    stage=stage, stage_min=stage_min, stage_max=stage_max,
                                    color_filter1=color_filter1, color_filter2=color_filter2, mag_filter=mag_filter)[:4]
