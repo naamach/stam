@@ -297,7 +297,7 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sa
 
 
 def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", assign_param="mass", get_excess=None,
-             suffix=None, is_save=True, color_filter1="G_BP", color_filter2="G_RP", mag_filter="G",
+             suffix="", is_save=True, color_filter1="G_BP", color_filter2="G_RP", mag_filter="G",
              is_extrapolate=True, rbf_func="linear",
              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
              models='./PARSEC/', correct_extinction=True, reddening_key="av",
