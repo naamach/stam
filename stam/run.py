@@ -346,7 +346,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
             e_bv = 3.1 * sources[reddening_key]
         else:
             e_bv = sources[color_excess_key]
-        e_bprp, A_G = calc_gaia_extinction(e_bv)
+        e_bprp, A_G = get_extinction_in_gaia_band(e_bv)
         bp_rp = bp_rp - e_bprp
         mg = mg - A_G
         suffix += "_extinction"
