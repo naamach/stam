@@ -91,7 +91,10 @@ def colname(param, model_name="parsec"):
             "phase": "label",
             "Gmag": "Gmag",
             "G_BPmag": "G_BPmag",
-            "G_RPmag": "G_RPmag"
+            "G_RPmag": "G_RPmag",
+            "B": "Bmag",
+            "V": "Vmag",
+            "I": "Imag"
         }
     else:
         raise Exception(f"Unknown model {model_name}!")
