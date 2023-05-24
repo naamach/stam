@@ -185,34 +185,57 @@ def calc_gaia_extinction(gaia, **kwargs):
     return e_bprp, A_G
 
 
-def get_extinction_in_gaia_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035):
+def get_extinction_in_band(e_bv, mag_filter="G", color_filter1="BP", color_filter2="RP",
+                           R_G=2.740, R_BP=3.374, R_RP=2.035, R_V=3.1):
     """
-    get_extinction_in_gaia_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035)
+    get_extinction_in_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035)
 
-    Convert the extinction and reddening to the Gaia bands.
-    R coefficients from Casagrande & VandenBerg (2018), table 2:
+    Convert the extinction and reddening to the selected bands.
+
+    Gaia band R coefficients from Casagrande & VandenBerg (2018), table 2:
     https://ui.adsabs.harvard.edu/abs/2018MNRAS.479L.102C/abstract
+
+    Johnson-Cousins bands R coefficients from Munari and Carraro (1996), table 2 (assuming Rv=3.1):
+    https://ui.adsabs.harvard.edu/abs/1996A%26A...314..108M/abstract
 
     Parameters
     ----------
     e_bv : float
         The E(B-V) value in mag.
+    mag_filter : str, optional
+        The main band (default: "G").
+    color_filter1 : str, optional
+        The first color band (default: "BP").
+    color_filter2 : str, optional
+        The second color band (default: "RP").
     R_G : float, optional
     R_BP : float, optional
     R_RP : float, optional
+    R_V : float, optional
 
     Returns
     -------
-    e_bprp : array_like
-        Reddening in the Gaia bands, E(Gbp-Grp).
-    A_G : array_like
-        Gaia G-band extinction, A_G = R_G * E(Gbp-Grp).
+    excess : array_like
+        Reddening (color excess) in the selected color, e.g. E(BP-RP).
+    A : array_like
+        Extinction in the selected main band, e.g. A_G.
     """
 
-    A_G = e_bv * R_G
-    e_bprp = (R_BP - R_RP) * e_bv
+    if mag_filter == "G":
+        A = e_bv * R_G
+    elif mag_filter == "V":
+        A = e_bv * R_V
+    else:
+        raise f"Extinction in {mag_filter}-band not implemented!"
 
-    return e_bprp, A_G
+    if (color_filter1 == "BP") & (color_filter2 == "RP"):
+        excess = (R_BP - R_RP) * e_bv
+    elif (color_filter1 == "B") & (color_filter2 == "Ic"):
+        excess = 2.25 * e_bv
+    else:
+        raise f"Reddening in {color_filter1}-{color_filter2} not implemented!"
+
+    return excess, A
 
 
 def read_gaia_data(file):

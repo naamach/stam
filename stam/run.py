@@ -3,7 +3,7 @@ import time
 import numpy as np
 from .utils import get_config, init_log, close_log
 from .gaia import read_gaia_data, calc_bp_rp_uncertainty, calc_mg_uncertainty, calc_gaia_extinction, get_gaia_subsample, \
-    get_gaia_isochrone_subsample, get_extinction_in_gaia_band
+    get_gaia_isochrone_subsample, get_extinction_in_band, calc_absmag_uncertainty, calc_color_uncertainty
 from .getmodels import read_parsec
 from .gentracks import get_combined_isomasses, get_isochrone_polygon, get_isotrack, get_isochrone_side
 from .assign import assign_param, assign_score_based_on_cmd_position
@@ -332,13 +332,20 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
         log.error(f"Using {track_type} not yet implemented!")
 
     # calculate color and magnitude uncertainties
-    if ~("mg" in sources.colnames):
-        # calculate the absolute magnitude in G band
-        sources["mg"] = sources["phot_g_mean_mag"] + 5 * np.log10(sources["parallax"]) - 10
-    bp_rp = sources["bp_rp"]
-    mg = sources["mg"]
-    bp_rp_error = calc_bp_rp_uncertainty(sources)
-    mg_error = calc_mg_uncertainty(sources)
+    if (mag_filter == "G") & (color_filter1 == "BP") & (color_filter2 == "RP"):
+        if ~("mg" in sources.colnames):
+            # calculate the absolute magnitude in G band
+            sources["mg"] = sources["phot_g_mean_mag"] + 5 * np.log10(sources["parallax"]) - 10
+        color = sources["bp_rp"]
+        mag = sources["mg"]
+        color_error = calc_bp_rp_uncertainty(sources)
+        mag_error = calc_mg_uncertainty(sources)
+    elif (mag_filter == "V") & (color_filter1 == "B") & (color_filter2 == "Ic"):
+        photsystem = 'jkc'
+        color = sources[f'{color_filter1}_{photsystem}_mag'] - sources[f'{color_filter2}_{photsystem}_mag']
+        mag = sources[f'{mag_filter}_{photsystem}_mag'] + 5 * np.log10(sources["parallax"]) - 10
+        color_error = calc_color_uncertainty(sources, color_filter1=color_filter1, color_filter2=color_filter2, photsystem=photsystem)
+        mag_error = calc_absmag_uncertainty(sources, mag_filter=mag_filter, photsystem=photsystem)
 
     if correct_extinction:
         log.info("Applying extinction correction...")
@@ -346,9 +353,9 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
             e_bv = sources[reddening_key] / 3.1
         else:
             e_bv = sources[color_excess_key]
-        e_bprp, A_G = get_extinction_in_gaia_band(e_bv)
-        bp_rp = bp_rp - e_bprp
-        mg = mg - A_G
+        color_excess, A = get_extinction_in_band(e_bv, mag_filter=mag_filter, color_filter1=color_filter1, color_filter2=color_filter2)
+        color = color - color_excess
+        mag = mag - A
         suffix += "_extinction"
 
     output = []
@@ -361,7 +368,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
             kwargs_interp = {"function": rbf_func}
         else:
             kwargs_interp = {}
-        param_mean, param_error = get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param=assign_param, suffix=suffix,
+        param_mean, param_error = get_param(color, color_error, mag, mag_error, tracks, param=assign_param, suffix=suffix,
                                             is_save=is_save,
                                             log=log, output_type=output_type, output_path=output_path,
                                             csv_format=csv_format,
@@ -381,8 +388,8 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
                                                                mag_filter=mag_filter + "mag", **kwargs)
 
         # calculate the excess probability
-        excess_prob = assign_score_based_on_cmd_position(bp_rp, bp_rp_error, mg,
-                                                         mg_error, polygon,
+        excess_prob = assign_score_based_on_cmd_position(color, color_error, mag,
+                                                         mag_error, polygon,
                                                          n_realizations=n_realizations,
                                                          show_progress_bar=False)
         output.append(excess_prob)
