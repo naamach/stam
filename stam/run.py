@@ -342,8 +342,8 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
         mag_error = calc_mg_uncertainty(sources)
     elif (mag_filter == "V") & (color_filter1 == "B") & (color_filter2 == "I"):
         photsystem = 'jkc'
-        color = sources[f'{color_filter1}_{photsystem}_mag'] - sources[f'{color_filter2}_{photsystem}_mag']
-        mag = sources[f'{mag_filter}_{photsystem}_mag'] + 5 * np.log10(sources["parallax"]) - 10
+        color = sources[f'{color_filter1.lower()}_{photsystem}_mag'] - sources[f'{color_filter2.lower()}_{photsystem}_mag']
+        mag = sources[f'{mag_filter.lower()}_{photsystem}_mag'] + 5 * np.log10(sources["parallax"]) - 10
         color_error = calc_color_uncertainty(sources, color_filter1=color_filter1, color_filter2=color_filter2, photsystem=photsystem)
         mag_error = calc_absmag_uncertainty(sources, mag_filter=mag_filter, photsystem=photsystem)
 

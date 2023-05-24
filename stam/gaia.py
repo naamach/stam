@@ -81,8 +81,8 @@ def calc_color_uncertainty(gaia, color_filter1="u", color_filter2="z", photsyste
 
     """
     color_error = 2.5 * np.log10(np.e) * np.sqrt(
-        (gaia[f'{color_filter1}_{photsystem}_flux_error'] / gaia[f'{color_filter1}_{photsystem}_flux']) ** 2 +
-        (gaia[f'{color_filter2}_{photsystem}_flux_error'] / gaia[f'{color_filter2}_{photsystem}_flux']) ** 2)
+        (gaia[f'{color_filter1.lower()}_{photsystem}_flux_error'] / gaia[f'{color_filter1.lower()}_{photsystem}_flux']) ** 2 +
+        (gaia[f'{color_filter2.lower()}_{photsystem}_flux_error'] / gaia[f'{color_filter2.lower()}_{photsystem}_flux']) ** 2)
 
     return color_error
 
@@ -110,7 +110,7 @@ def calc_absmag_uncertainty(gaia, mag_filter="g", photsystem="sdss"):
     """
 
     absmag_error = 2.5 * np.log10(np.e) * np.sqrt(
-        (gaia[f'{mag_filter}_{photsystem}_flux_error'] / gaia[f'{mag_filter}_{photsystem}_flux']) ** 2 + 4 / gaia['parallax_over_error'] ** 2)
+        (gaia[f'{mag_filter.lower()}_{photsystem}_flux_error'] / gaia[f'{mag_filter.lower()}_{photsystem}_flux']) ** 2 + 4 / gaia['parallax_over_error'] ** 2)
 
     return absmag_error
 
