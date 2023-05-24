@@ -230,7 +230,7 @@ def get_extinction_in_band(e_bv, mag_filter="G", color_filter1="BP", color_filte
 
     if (color_filter1 == "BP") & (color_filter2 == "RP"):
         excess = (R_BP - R_RP) * e_bv
-    elif (color_filter1 == "B") & (color_filter2 == "Ic"):
+    elif (color_filter1 == "B") & (color_filter2 == "I"):
         excess = 2.25 * e_bv
     else:
         raise f"Reddening in {color_filter1}-{color_filter2} not implemented!"
