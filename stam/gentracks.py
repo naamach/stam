@@ -518,7 +518,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, log_age_r
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
 
 
-def get_isochrone_side(models, vals, params, side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
+def get_isochrone_side(models, vals, params=("mass", "mh"), side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
                        is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
