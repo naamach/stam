@@ -4,7 +4,8 @@ import numpy as np
 from . import rbf, griddata, nurbs
 
 
-def assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", interp_fun="rbf",
+def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
+                 xparam="color", yparam="absmag", param="mass", interp_fun="rbf",
                  binary_polygon=None, show_progress_bar=True, **kwargs):
     """
     assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", interp_fun="rbf",
@@ -27,6 +28,10 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", 
     n_realizations : int, optional
         Number of realizations to draw for each star, from a 2D-Gaussian distribution around the color-magnitude
         position of the star (default: 10).
+    xparam : str, optional
+        x-axis parameter (default: "color").
+    yparam : str, optional
+        y-axis parameter (default: "absmag").
     param : str, optional
         Which parameter to estimate (options: "mass", "mh"; default: "mass").
     interp_fun : str, optional
