@@ -6,7 +6,8 @@ from . import rbf, griddata, nurbs
 
 def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
                  xparam="color", yparam="absmag", param="mass", interp_fun="rbf",
-                 binary_polygon=None, show_progress_bar=True, **kwargs):
+                 binary_polygon=None, show_progress_bar=True,
+                 return_realizations=False, **kwargs):
     """
     assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", interp_fun="rbf",
                  binary_polygon=None, **kwargs)
@@ -40,19 +41,23 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
         The polygon defining the equal-mass binary region on the HR-diagram (default: None).
     show_progress_bar : bool, optional
         If true, show progress bar (default: True).
+    return_realizations : bool, optional
+        If true, also returns the individual realizations of `param` (default: `False`).
 
     Returns
     -------
     param_mean : array_like
-        Estimated parameter mean for each star (same size as `color`).
+        Estimated parameter mean for each star (same size as `x`).
     param_error : array_like
-        Estimated parameter standard deviation for each star (same size as `color`).
-    binary_param_mean : array_like, returned only if binary_polygon is not None
-        Estimated parameter mean for each star inside binary_polygon, assuming an equal-mass binary (same size as `color`).
-    binary_param_error : array_like, returned only if binary_polygon is not None
-        Estimated parameter standard deviation for each star inside binary_polygon, assuming an equal-mass binary (same size as `color`).
-    weight : array_like, returned only if binary_polygon is not None
-        Single-star probability: the fraction of realizations in which the star was *outside* of binary_polygon (same size as `color`).
+        Estimated parameter standard deviation for each star (same size as `x`).
+    binary_param_mean : array_like, returned only if `binary_polygon` is not None
+        Estimated parameter mean for each star inside `binary_polygon`, assuming an equal-mass binary (same size as `x`).
+    binary_param_error : array_like, returned only if `binary_polygon` is not None
+        Estimated parameter standard deviation for each star inside binary_polygon, assuming an equal-mass binary (same size as `x`).
+    weight : array_like, returned only if `binary_polygon` is not None
+        Single-star probability: the fraction of realizations in which the star was *outside* of binary_polygon (same size as `x`).
+    realizations : array_like, returned only if `return_realizations` is `True`
+        Individual realizations of `param` (shape `(len(x), n_realizations)`).
     """
 
     if interp_fun not in ["rbf", "griddata", "nurbs"]:
@@ -69,6 +74,9 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
 
     param_mean = np.zeros(len(x))*np.nan
     param_error = np.zeros(len(x))*np.nan
+
+    if return_realizations:
+        realizations = np.zeros((len(x), n_realizations))*np.nan
 
     if binary_polygon is not None:
         binary_param_mean = np.zeros(len(x))*np.nan
@@ -100,7 +108,7 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
                 weight[i] = np.count_nonzero(~binary_idx)/len(binary_idx)  # single-star probability
 
                 # shift the points that fall inside the binary sequence to 2.5log(2)-fainter magnitudes
-                x[binary_idx, 1] = x[binary_idx, 1] + 2.5*np.log10(2)
+                points[binary_idx, 1] = points[binary_idx, 1] + 2.5*np.log10(2)
 
         if interp_fun == "rbf":
             curr_param = rbf.interpolate_tracks(rbfi, points[:, 0], points[:, 1])
@@ -122,13 +130,21 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
             binary_param_mean[i] = np.nanmean(curr_param[binary_idx])
             binary_param_error[i] = np.nanstd(curr_param[binary_idx])
 
-    print(f"Calculating mean took {time.time() - t:.1} sec.")
+        if return_realizations:
+            realizations[i, :] = curr_param
+
+    print(f"Calculating mean took {time.time() - t:.1f} sec.")
 
     if binary_polygon is None:
-        return param_mean, param_error
+        output = [param_mean, param_error]
     else:
         # take binary sequence into account
-        return param_mean, param_error, binary_param_mean, binary_param_error, weight
+        output = [param_mean, param_error, binary_param_mean, binary_param_error, weight]
+
+    if return_realizations:
+        output.append((realizations)
+
+    return output
 
 
 def assign_score_based_on_cmd_position(color, color_error, mag, mag_error, polygon, n_realizations=10, show_progress_bar=True):
