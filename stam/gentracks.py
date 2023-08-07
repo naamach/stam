@@ -172,7 +172,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         if ~np.any(mh_idx):
             raise Exception(f"No tracks found for metallicity {mh}+/-{mh_res}!")
     else:
-        mh_idx = (mh_min - mh_res <= models[colname("m0")]) & (models[colname("m0")] <= mh_max + mh_res)
+        mh_idx = (mh_min - mh_res <= models[colname("mh")]) & (models[colname("mh")] <= mh_max + mh_res)
         if ~np.any(mh_idx):
             raise Exception(f"No tracks found in metallicity range {mh_min}-{mh_max}!")
 
@@ -185,7 +185,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         if ~np.any(stage_idx):
             raise Exception(f"No tracks found in stage range {stage_min}-{stage_max}!")
 
-    idx = mass_idx & age_idx & mh_idx & stage_idx
+    idx = mass_idx & absmag_idx & age_idx & mh_idx & stage_idx
 
     color1 = models[idx][colname(color_filter1)]
     color2 = models[idx][colname(color_filter2)]
