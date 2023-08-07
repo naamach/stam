@@ -142,7 +142,7 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
         output = [param_mean, param_error, binary_param_mean, binary_param_error, weight]
 
     if return_realizations:
-        output.append((realizations)
+        output.append(realizations)
 
     return output
 
