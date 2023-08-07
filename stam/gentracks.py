@@ -6,18 +6,19 @@ from .getmodels import colname
 
 
 def get_isotrack(models, vals, params=("mass", "mh"),
-                 mass_res=0.007, age_res=0.1, log_age_res=0.05, mh_res=0.05, stage=1, sort_by=None,
-                 mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
+                 mass_res=0.007, absmag_res=0.01, age_res=0.1, log_age_res=0.05, mh_res=0.05, stage=1, sort_by=None,
+                 mass_min=0, mass_max=np.inf, absmag_min=-np.inf, absmag_max=np.inf, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
                  mag_filter="Gmag", return_idx=False, return_table=False):
     """
     get_isotrack(models, vals, params=("mass", "mh"),
-                 mass_res=0.007, age_res=0.1, mh_res=0.05, stage=1,
-                 mass_min=0, mass_max=1, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
-                 stage_min=0, stage_max=np.inf)
+                 mass_res=0.007, absmag_res=0.01, age_res=0.1, log_age_res=0.05, mh_res=0.05, stage=1, sort_by=None,
+                 mass_min=0, mass_max=np.inf, absmag_min=-np.inf, absmag_max=np.inf, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,
+                 stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
+                 mag_filter="Gmag", return_idx=False, return_table=False)
 
-    Get a specific stellar evolution track, with two out of three parameters fixed (mass, age, or metallicity).
-    NOTE: This function doesn't interpolate between tracks, just return all tracks within the mass/age/metallicity bins.
+    Get a specific stellar evolution track, with two out of three parameters fixed (mass, age, metallicity, absmag).
+    NOTE: This function doesn't interpolate between tracks, just return all tracks within the mass/age/metallicity/absmag bins.
 
     Parameters
     ----------
@@ -29,6 +30,8 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Fixed parameters names (default: ("mass", "mh")).
     mass_res : float, optional
         Mass resolution, in Msun (default: 0.007 Msun). If negative - treat as fractional.
+    absmag_res : float, optional
+        Absolute magnitude resolution, in mag (default: 0.01 mag). If negative - treat as fractional.
     age_res : float, optional
         Age resolution, in Gyr (default: 0.1 Gyr). If negative - treat as fractional.
     log_age_res : float, optional
@@ -41,6 +44,10 @@ def get_isotrack(models, vals, params=("mass", "mh"),
         Minimum mass to consider, in Msun (if no fixed mass was chosen; default: 0 Msun).
     mass_max : float, optional
         Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1 Msun).
+    absmag_min : float, optional
+        Minimum absolute magnitude to consider, in mag (if no fixed absolute magnitude was chosen; default: `-np.inf`).
+    absmag_max : float, optional
+        Maximum absolute magnitude to consider, in mag (if no fixed absolute magnitude was chosen; default: `np.inf`).
     age_min : float, optional
         Minimum age to consider, in Gyr (if no fixed age was chosen; default: 0 Gyr).
     age_max : float, optional
@@ -66,12 +73,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     Returns
     -------
-    bp : array_like
-        Chosen stellar evolution track Gaia Gbp magnitude
-    rp : array_like
-        Chosen stellar evolution track Gaia Grp magnitude
-    g : array_like
-        Chosen stellar evolution track Gaia G magnitude
+    color1 : array_like
+        Chosen stellar evolution track `color_filter1` magnitude
+    color2 : array_like
+        Chosen stellar evolution track `color_filter2` magnitude
+    absmag : array_like
+        Chosen stellar evolution track `mag_filter` absolute magnitude
     mass : array_like
         Chosen stellar evolution track mass, in Msun
     mh : array_like
@@ -101,6 +108,26 @@ def get_isotrack(models, vals, params=("mass", "mh"),
             mass_idx = (mass_min - mass_res <= models[colname("m0")]) & (models[colname("m0")] <= mass_max + mass_res)
         if ~np.any(mass_idx):
             raise Exception(f"No tracks found in mass range {mass_min}-{mass_max} Msun!")
+
+    if "absmag" in params:
+        absmag = vals[params.index("absmag")]
+        if absmag_res < 0:
+            # treat as fractional
+            absmag_res = -absmag_res
+            absmag_idx = ((absmag*(1 - absmag_res)) <= models[colname(mag_filter)]) & (models[colname(mag_filter)] < (absmag*(1 + absmag_res)))
+        else:
+            absmag_idx = ((absmag - absmag_res) <= models[colname(mag_filter)]) & (models[colname(mag_filter)] < (absmag + absmag_res))
+        if ~np.any(mass_idx):
+            raise Exception(f"No tracks found for absolute magnitude {absmag}+/-{absmag_res} Msun!")
+    else:
+        if absmag_res < 0:
+            # treat as fractional
+            absmag_res = -absmag_res
+            absmag_idx = (absmag_min*(1 - absmag_res) <= models[colname(mag_filter)]) & (models[colname(mag_filter)] <= absmag_max*(1 + absmag_res))
+        else:
+            absmag_idx = (absmag_min - absmag_res <= models[colname(mag_filter)]) & (models[colname(mag_filter)] <= absmag_max + absmag_res)
+        if ~np.any(mass_idx):
+            raise Exception(f"No tracks found in absolute magnitude range {absmag_min}-{absmag_max} Msun!")
 
     if "age" in params:
         age = vals[params.index("age")]
@@ -160,9 +187,9 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     idx = mass_idx & age_idx & mh_idx & stage_idx
 
-    bp = models[idx][colname(color_filter1)]
-    rp = models[idx][colname(color_filter2)]
-    g = models[idx][colname(mag_filter)]
+    color1 = models[idx][colname(color_filter1)]
+    color2 = models[idx][colname(color_filter2)]
+    absmag = models[idx][colname(mag_filter)]
     mass = models[idx][colname("m0")]
     mh = models[idx][colname("mh")]
     age = 10 ** models[idx][colname("log_age")] * 1e-9  # [Gyr]
@@ -182,18 +209,18 @@ def get_isotrack(models, vals, params=("mass", "mh"),
             sort_idx = np.argsort(age)
         elif sort_by == "mh":
             sort_idx = np.argsort(mh)
-    bp = bp[sort_idx]
-    rp = rp[sort_idx]
-    g = g[sort_idx]
+    color1 = color1[sort_idx]
+    color2 = color2[sort_idx]
+    absmag = absmag[sort_idx]
     mass = mass[sort_idx]
     mh = mh[sort_idx]
     age = age[sort_idx]
     stage = stage[sort_idx]
 
     if return_table:
-        output = Table([mass, bp - rp, g, mh, stage, age], names=('mass', 'bp_rp', 'mg', 'mh', 'stage', 'age'))
+        output = Table([mass, color1 - color2, absmag, mh, stage, age], names=('mass', 'color', 'absmag', 'mh', 'stage', 'age'))
     else:
-        output = [bp, rp, g, mass, mh, age, stage]
+        output = [color1, color2, absmag, mass, mh, age, stage]
 
     if return_idx:
         idx = np.where(idx)[0]
@@ -518,7 +545,7 @@ def get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, log_age_r
     return polygon, BP_RP1, G1, mass1, BP_RP2, G2, mass2
 
 
-def get_isochrone_side(models, vals, params=("mass", "mh"), side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
+def get_isochrone_side(models, vals, params=("age", "mh"), side="blue", age_res=0.001, log_age_res=0.05, mh_res=0.05, mass_res=0.007, mass_min=0, mass_max=1.2,
                        stage=1, stage_min=0, stage_max=np.inf, bp_rp_min=-10, bp_rp_max=10, bp_rp_shift=0, mg_shift=0,
                        is_extrapolate=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag"):
     """
@@ -534,7 +561,7 @@ def get_isochrone_side(models, vals, params=("mass", "mh"), side="blue", age_res
     vals : array_like (of length 2)
         Values of the fixed parameters (units: [mass] = Msun, [age] = Gyr, [mh] = dex).
     params : tuple (of length 2), optional
-        Fixed parameters names (default: ("mass", "mh")).
+        Fixed parameters names (default: ("age", "mh")).
     side : str, optional (default: "blue")
         Which side of the track to include ("blue"/"red").
     age_res : float, optional
