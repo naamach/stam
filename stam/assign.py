@@ -4,23 +4,23 @@ import numpy as np
 from . import rbf, griddata, nurbs
 
 
-def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass", interp_fun="rbf",
+def assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", interp_fun="rbf",
                  binary_polygon=None, show_progress_bar=True, **kwargs):
     """
-    assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, param="mass", interp_fun="rbf",
+    assign_param(x, xerror, y, yerror, tracks, n_realizations=10, param="mass", interp_fun="rbf",
                  binary_polygon=None, **kwargs)
 
     Assign a specific parameter (mass or metallicity) to a star, based on its color and magnitude.
 
     Parameters
     ----------
-    color : array_like
-        Color of the stars (usually Gaia's Gbp-Grp).
-    color_error : array_like
+    x : array_like
+        x-axis parameter (usually the color of the stars, e.g. Gaia's Gbp-Grp).
+    xerror : array_like
         `color` uncertainty (same size as `color`).
-    mag : array_like
+    y : array_like
         Absolute magnitude of the stars (usually Gaia's M_G; same size as `color`).
-    mag_error : array_like
+    yerror : array_like
         `mag` uncertainty (same size as `color`).
     tracks : Table
         Stellar-track grid, as retrieved by `stam.tracks.get_isomasses` or `stam.tracks.get_combined_isomasses`.
@@ -56,40 +56,40 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
 
     print(f"Using {interp_fun} interpolation...")
     if interp_fun == "rbf":
-                                        rbfi = rbf.rbfi_tracks(tracks, param=param, **kwargs)
+        rbfi = rbf.rbfi_tracks(tracks, xparam=xparam, yparam=yparam, param=param, **kwargs)
     elif interp_fun == "griddata":
-        tri = griddata.triangulate_tracks(tracks)
+        tri = griddata.triangulate_tracks(tracks, xparam=xparam, yparam=yparam)
     elif interp_fun == "nurbs":
-        surf = nurbs.tracks2surf(tracks, param)
+        surf = nurbs.tracks2surf(tracks, param, xparam=xparam, yparam=yparam)
 
-    param_mean = np.zeros(len(color))*np.nan
-    param_error = np.zeros(len(color))*np.nan
+    param_mean = np.zeros(len(x))*np.nan
+    param_error = np.zeros(len(x))*np.nan
 
     if binary_polygon is not None:
-        binary_param_mean = np.zeros(len(color))*np.nan
-        binary_param_error = np.zeros(len(color))*np.nan
-        weight = np.ones(len(color))
+        binary_param_mean = np.zeros(len(x))*np.nan
+        binary_param_error = np.zeros(len(x))*np.nan
+        weight = np.ones(len(x))
 
     if show_progress_bar:
-        iterations = tqdm(range(len(color)))
+        iterations = tqdm(range(len(x)))
     else:
-        iterations = range(len(color))
+        iterations = range(len(x))
 
     t = time.time()
     for i in iterations:  # for each gaia source
-        mean = [color[i], mag[i]]
-        cov = [[color_error[i], 0], [0, mag_error[i]]]
+        mean = [x[i], y[i]]
+        cov = [[xerror[i], 0], [0, yerror[i]]]
 
-        x = np.random.multivariate_normal(mean, cov, size=n_realizations)
+        points = np.random.multivariate_normal(mean, cov, size=n_realizations)
 
         if binary_polygon is not None:
             # check which realizations fall inside the binary sequence
-            binary_idx = binary_polygon.contains_points(x)
+            binary_idx = binary_polygon.contains_points(points)
             if np.any(binary_idx):
                 # some of the points fall inside the binary sequence, take more
-                x_extra = np.random.multivariate_normal(mean, cov, size=n_realizations)
-                x = np.concatenate((x, x_extra))
-                binary_idx = binary_polygon.contains_points(x)
+                points_extra = np.random.multivariate_normal(mean, cov, size=n_realizations)
+                points = np.concatenate((points, points_extra))
+                binary_idx = binary_polygon.contains_points(points)
 
                 # calculate relative single/binary weight
                 weight[i] = np.count_nonzero(~binary_idx)/len(binary_idx)  # single-star probability
@@ -98,11 +98,11 @@ def assign_param(color, color_error, mag, mag_error, tracks, n_realizations=10, 
                 x[binary_idx, 1] = x[binary_idx, 1] + 2.5*np.log10(2)
 
         if interp_fun == "rbf":
-            curr_param = rbf.interpolate_tracks(rbfi, x[:, 0], x[:, 1])
+            curr_param = rbf.interpolate_tracks(rbfi, points[:, 0], points[:, 1])
         elif interp_fun == "griddata":
-            curr_param, nan_idx = griddata.interpolate_tracks(tri, x[:, 0], x[:, 1], tracks, param=param)
+            curr_param, nan_idx = griddata.interpolate_tracks(tri, points[:, 0], points[:, 1], tracks, param=param)
         elif interp_fun == "nurbs":
-            curr_param = nurbs.evaluate(surf, x[:, 0], x[:, 1])
+            curr_param = nurbs.evaluate(surf, points[:, 0], points[:, 1])
 
         if binary_polygon is None:
             # don't take binary sequence into account

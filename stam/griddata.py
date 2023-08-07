@@ -64,7 +64,7 @@ def interpolate(values, tri, uv, fill_value=np.nan, d=2):
     return ret
 
 
-def triangulate_tracks(tracks, color="bp_rp", mag="mg"):
+def triangulate_tracks(tracks, xparam="color", yparam="absmag"):
     """
     triangulate_tracks(tracks, color="bp_rp", mag="mg")
 
@@ -74,10 +74,10 @@ def triangulate_tracks(tracks, color="bp_rp", mag="mg"):
     ----------
     tracks : Table
         Stellar-track grid, as retrieved by `stam.tracks.get_isomasses` or `stam.tracks.get_combined_isomasses`.
-    color : array_like
-        Color of the stars (usually Gaia's Gbp-Grp).
-    mag : array_like
-        Absolute magnitude of the stars (usually Gaia's M_G; same size as `color`).
+    xparam : str, optional
+        x-axis parameter (usually the color of the stars, e.g. Gaia's Gbp-Grp; default: "color").
+    yparam : str, optional
+        y-axis parameter (usually the absolute magnitude of the stars, e.g. Gaia's M_G; same size as `x`; default: "absmag").
 
     Returns
     -------
@@ -85,7 +85,7 @@ def triangulate_tracks(tracks, color="bp_rp", mag="mg"):
         2D Delaunay triangulation of the stellar track grid.
     """
 
-    track_points = np.array([tracks[color], tracks[mag]]).T
+    track_points = np.array([tracks[xparam], tracks[yparam]]).T
     tri = triangulate(track_points)
     return tri
 

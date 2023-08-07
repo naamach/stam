@@ -2,9 +2,9 @@ import numpy as np
 from geomdl import BSpline, knotvector
 
 
-def tracks2surf(tracks, param, delta=0.01, xparam="bp_rp", yparam="mg", xstep=0.1, ystep=0.1):
+def tracks2surf(tracks, param, delta=0.01, xparam="color", yparam="absmag", xstep=0.1, ystep=0.1):
     """
-    tracks2surf(tracks, param, delta=0.01, xparam="bp_rp", yparam="mg", xstep=0.1, ystep=0.1)
+    tracks2surf(tracks, param, delta=0.01, xparam="color", yparam="absmag", xstep=0.1, ystep=0.1)
 
     Compute a NURBS surface from a set of stellar evolution tracks, using the `geomdl` package.
 
@@ -17,9 +17,9 @@ def tracks2surf(tracks, param, delta=0.01, xparam="bp_rp", yparam="mg", xstep=0.
     delta : float, optional
         `geomdl` surface evaluation step size.
     xparam : str, optional
-        x-axis parameter (default: "bp_rp").
+        x-axis parameter (default: "color").
     yparam : str, optional
-        y-axis parameter (default: "mg").
+        y-axis parameter (default: "absmag").
     xstep : float, optional
         x-axis grid step (default: 0.1).
     ystep : float, optional
