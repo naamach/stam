@@ -91,7 +91,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     if "mass" in params:
         mass = vals[params.index("mass")]
-        if mass_res < 0:
+        if mass_res is None:
+            # take nearest track
+            masses = np.unique(models[colname("m0")])
+            i = np.argmin(np.abs(mass - masses))
+            mass_idx = models[colname("m0")] == masses[i]
+        elif mass_res < 0:
             # treat as fractional
             mass_res = -mass_res
             mass_idx = ((mass*(1 - mass_res)) <= models[colname("m0")]) & (models[colname("m0")] < (mass*(1 + mass_res)))
@@ -111,7 +116,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     if "absmag" in params:
         absmag = vals[params.index("absmag")]
-        if absmag_res < 0:
+        if absmag_res is None:
+            # take nearest track
+            absmags = np.unique(models[colname(mag_filter)])
+            i = np.argmin(np.abs(absmag - absmags))
+            absmag_idx = models[colname(mag_filter)] == absmags[i]
+        elif absmag_res < 0:
             # treat as fractional
             absmag_res = -absmag_res
             absmag_idx = ((absmag*(1 - absmag_res)) <= models[colname(mag_filter)]) & (models[colname(mag_filter)] < (absmag*(1 + absmag_res)))
@@ -131,7 +141,12 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     if "age" in params:
         age = vals[params.index("age")]
-        if age_res < 0:
+        if age_res is None:
+            # take nearest track
+            ages = 10**np.unique(models[colname("log_age")])*1e-9
+            i = np.argmin(np.abs(age - ages))
+            age_idx = 10**models[colname("log_age")]*1e-9 == ages[i]
+        elif age_res < 0:
             # treat as fractional
             age_res = -age_res
             age_idx = (np.log10((np.maximum(age*(1 - age_res), 0)) * 1e9) <= models[colname("log_age")]) & \
@@ -145,8 +160,14 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                 raise Exception(f"No tracks found for age {age}+/-{age_res} Gyr!")
     elif "log_age" in params:
         log_age = vals[params.index("log_age")]
-        age_idx = ((np.maximum(log_age - log_age_res, 0)) <= models[colname("log_age")]) & \
-                  (models[colname("log_age")] < (log_age + log_age_res))
+        if age_res is None:
+            # take nearest track
+            log_ages = np.unique(models[colname("log_age")])
+            i = np.argmin(np.abs(log_age - log_ages))
+            age_idx = models[colname("log_age")] == log_ages[i]
+        else:
+            age_idx = ((np.maximum(log_age - log_age_res, 0)) <= models[colname("log_age")]) & \
+                      (models[colname("log_age")] < (log_age + log_age_res))
         if ~np.any(age_idx):
             raise Exception(f"No tracks found for log(age) {log_age}+/-{log_age_res}!")
     else:
@@ -168,7 +189,13 @@ def get_isotrack(models, vals, params=("mass", "mh"),
 
     if "mh" in params:
         mh = vals[params.index("mh")]
-        mh_idx = ((mh - mh_res) <= models[colname("mh")]) & (models[colname("mh")] < (mh + mh_res))
+        if mh_res is None:
+            # take nearest track
+            mhs = np.unique(models[colname("mh")])
+            i = np.argmin(np.abs(mh - mhs))
+            mh_idx = models[colname("mh")] == mhs[i]
+        else:
+            mh_idx = ((mh - mh_res) <= models[colname("mh")]) & (models[colname("mh")] < (mh + mh_res))
         if ~np.any(mh_idx):
             raise Exception(f"No tracks found for metallicity {mh}+/-{mh_res}!")
     else:
