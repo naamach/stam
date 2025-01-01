@@ -10,11 +10,11 @@ from .assign import assign_param, assign_score_based_on_cmd_position
 
 
 def get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=None, is_save=True, log=None,
-              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
+              output_type="csv", output_path=".", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
               binary_polygon=None, **kwargs):
     """
     get_param(bp_rp, bp_rp_error, mg, mg_error, tracks, param="mass", suffix=None, is_save=True, log=None,
-              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
+              output_type="csv", output_path=".", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
               binary_polygon=None, **kwargs)
 
     Write config file.
