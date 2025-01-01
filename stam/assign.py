@@ -90,48 +90,51 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
 
     t = time.time()
     for i in iterations:  # for each gaia source
-        mean = [x[i], y[i]]
-        cov = [[xerror[i], 0], [0, yerror[i]]]
-
-        points = np.random.multivariate_normal(mean, cov, size=n_realizations)
-
-        if binary_polygon is not None:
-            # check which realizations fall inside the binary sequence
-            binary_idx = binary_polygon.contains_points(points)
-            if np.any(binary_idx):
-                # some of the points fall inside the binary sequence, take more
-                points_extra = np.random.multivariate_normal(mean, cov, size=n_realizations)
-                points = np.concatenate((points, points_extra))
+        try:
+            mean = [x[i], y[i]]
+            cov = [[xerror[i], 0], [0, yerror[i]]]
+    
+            points = np.random.multivariate_normal(mean, cov, size=n_realizations)
+    
+            if binary_polygon is not None:
+                # check which realizations fall inside the binary sequence
                 binary_idx = binary_polygon.contains_points(points)
-
-                # calculate relative single/binary weight
-                weight[i] = np.count_nonzero(~binary_idx)/len(binary_idx)  # single-star probability
-
-                # shift the points that fall inside the binary sequence to 2.5log(2)-fainter magnitudes
-                points[binary_idx, 1] = points[binary_idx, 1] + 2.5*np.log10(2)
-
-        if interp_fun == "rbf":
-            curr_param = rbf.interpolate_tracks(rbfi, points[:, 0], points[:, 1])
-        elif interp_fun == "griddata":
-            curr_param, nan_idx = griddata.interpolate_tracks(tri, points[:, 0], points[:, 1], tracks, param=param)
-        elif interp_fun == "nurbs":
-            curr_param = nurbs.evaluate(surf, points[:, 0], points[:, 1])
-
-        if binary_polygon is None:
-            # don't take binary sequence into account
-            param_mean[i] = np.nanmean(curr_param)
-            param_error[i] = np.nanstd(curr_param)
-        else:
-            # single-star parameter estimation
-            param_mean[i] = np.nanmean(curr_param[~binary_idx])
-            param_error[i] = np.nanstd(curr_param[~binary_idx])
-
-            # binary twin parameter estimation
-            binary_param_mean[i] = np.nanmean(curr_param[binary_idx])
-            binary_param_error[i] = np.nanstd(curr_param[binary_idx])
-
-        if return_realizations:
-            realizations[i, :] = curr_param
+                if np.any(binary_idx):
+                    # some of the points fall inside the binary sequence, take more
+                    points_extra = np.random.multivariate_normal(mean, cov, size=n_realizations)
+                    points = np.concatenate((points, points_extra))
+                    binary_idx = binary_polygon.contains_points(points)
+    
+                    # calculate relative single/binary weight
+                    weight[i] = np.count_nonzero(~binary_idx)/len(binary_idx)  # single-star probability
+    
+                    # shift the points that fall inside the binary sequence to 2.5log(2)-fainter magnitudes
+                    points[binary_idx, 1] = points[binary_idx, 1] + 2.5*np.log10(2)
+    
+            if interp_fun == "rbf":
+                curr_param = rbf.interpolate_tracks(rbfi, points[:, 0], points[:, 1])
+            elif interp_fun == "griddata":
+                curr_param, nan_idx = griddata.interpolate_tracks(tri, points[:, 0], points[:, 1], tracks, param=param)
+            elif interp_fun == "nurbs":
+                curr_param = nurbs.evaluate(surf, points[:, 0], points[:, 1])
+    
+            if binary_polygon is None:
+                # don't take binary sequence into account
+                param_mean[i] = np.nanmean(curr_param)
+                param_error[i] = np.nanstd(curr_param)
+            else:
+                # single-star parameter estimation
+                param_mean[i] = np.nanmean(curr_param[~binary_idx])
+                param_error[i] = np.nanstd(curr_param[~binary_idx])
+    
+                # binary twin parameter estimation
+                binary_param_mean[i] = np.nanmean(curr_param[binary_idx])
+                binary_param_error[i] = np.nanstd(curr_param[binary_idx])
+    
+            if return_realizations:
+                realizations[i, :] = curr_param
+        except ValueError as e:
+            print(f"ValueError occurred for index {i}: {e}")
 
     print(f"Calculating mean took {time.time() - t:.1f} sec.")
 
