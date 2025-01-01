@@ -297,7 +297,7 @@ def get_mass_and_metallicity(idx=None, suffix=None, config_file="config.ini", sa
 
 
 def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", assign_param="mass", get_excess=None,
-             suffix="", is_save=True, color_filter1="G_BP", color_filter2="G_RP", mag_filter="G",
+             suffix="", is_save=True, color_filter1="G_BPmag", color_filter2="G_RPmag", mag_filter="Gmag",
              is_extrapolate=True, rbf_func="linear",
              output_type="csv", output_path="", csv_format="%.8f", n_realizations=10, interp_fun="rbf",
              models='./PARSEC/', correct_extinction=True, reddening_key="av",
@@ -327,11 +327,11 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
     is_save : bool, optional
         Whether to save the output to a file. Default is True.
     color_filter1 : str, optional
-        Filter name for the first photometric band used in color calculations. Default is "G_BP".
+        Filter name for the first photometric band used in color calculations. Default is "G_BPmag".
     color_filter2 : str, optional
-        Filter name for the second photometric band used in color calculations. Default is "G_RP".
+        Filter name for the second photometric band used in color calculations. Default is "G_RPmag".
     mag_filter : str, optional
-        Filter name for the magnitude band for absolute magnitude calculations. Default is "G".
+        Filter name for the magnitude band for absolute magnitude calculations. Default is "Gmag".
     is_extrapolate : bool, optional
         Whether to extrapolate beyond the provided track data when computing isochrones. Default is True.
     rbf_func : str, optional
@@ -387,7 +387,7 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
         log.error(f"Using {track_type} not yet implemented!")
 
     # calculate color and magnitude uncertainties
-    if (mag_filter == "G") & (color_filter1 == "G_BP") & (color_filter2 == "G_RP"):
+    if (mag_filter == "Gmag") & (color_filter1 == "G_BPmag") & (color_filter2 == "G_RPmag"):
         if ~("mg" in sources.colnames):
             # calculate the absolute magnitude in G band
             sources["mg"] = sources["phot_g_mean_mag"] + 5 * np.log10(sources["parallax"]) - 10
