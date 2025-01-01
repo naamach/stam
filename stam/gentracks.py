@@ -17,7 +17,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
                  stage_min=0, stage_max=np.inf, color_filter1="G_BPmag", color_filter2="G_RPmag",
                  mag_filter="Gmag", return_idx=False, return_table=False)
 
-    Get a specific stellar evolution track, with two out of three parameters fixed (mass, age, metallicity, absmag).
+    Get a specific stellar evolution track, with two out of four parameters fixed (mass, age, metallicity, absmag).
     NOTE: This function doesn't interpolate between tracks, just return all tracks within the mass/age/metallicity/absmag bins.
 
     Parameters
@@ -39,7 +39,7 @@ def get_isotrack(models, vals, params=("mass", "mh"),
     mh_res : float, optional
         Metallicity resolution, in dex (default: 0.05 dex)
     stage : int, optional
-        Stellar evolution stage label (0 = pre-MS, 1 = MS, etc.; default: 1).
+        Stellar evolution stage label (None = don't select a specific stage, 0 = pre-MS, 1 = MS, etc.; default: 1).
     mass_min : float, optional
         Minimum mass to consider, in Msun (if no fixed mass was chosen; default: 0 Msun).
     mass_max : float, optional

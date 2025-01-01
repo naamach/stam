@@ -303,18 +303,72 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
              models='./PARSEC/', correct_extinction=True, reddening_key="av",
              color_excess_key="e_bv", use_reddening_key=True, **kwargs):
     """
-
+    Executes multiple runs for stellar population analysis based on specified parameters
+    and evolutionary tracks. Handles extinction correction, color and magnitude uncertainty
+    calculations, parameter assignment, and red-excess probability computation.
 
     Parameters
     ----------
-
+    sources : astropy.table.Table
+        Input catalog of stellar objects containing observational data, such as magnitudes and
+        parallaxes.
+    vals : list of float, optional
+        Values for parameters of interest, e.g., age and metallicity. Defaults to [5, 0].
+    params : tuple of str, optional
+        Parameter names corresponding to the values in `vals`. Defaults to ("age", "mh").
+    track_type : str, optional
+        Type of evolutionary track to use. Default is "isotrack".
+    assign_param : str or None, optional
+        Parameter to be assigned based on evolutionary tracks. Defaults to "mass".
+    get_excess : str or None, optional
+        Side of isochrone to calculate excess probability for. Default is None.
+    suffix : str, optional
+        Suffix for output file names. Defaults to an empty string.
+    is_save : bool, optional
+        Whether to save the output to a file. Default is True.
+    color_filter1 : str, optional
+        Filter name for the first photometric band used in color calculations. Default is "G_BP".
+    color_filter2 : str, optional
+        Filter name for the second photometric band used in color calculations. Default is "G_RP".
+    mag_filter : str, optional
+        Filter name for the magnitude band for absolute magnitude calculations. Default is "G".
+    is_extrapolate : bool, optional
+        Whether to extrapolate beyond the provided track data when computing isochrones. Default is True.
+    rbf_func : str, optional
+        Radial basis function type for interpolation when using "rbf" method. Default is "linear".
+    output_type : str, optional
+        Format of the output file. Default is "csv".
+    output_path : str, optional
+        Path to save the output files. Defaults to an empty string (current directory).
+    csv_format : str, optional
+        Format used for saving numerical data in CSV files. Default is "%.8f".
+    n_realizations : int, optional
+        Number of realizations for Monte Carlo simulations in parameter assignment or
+        excess probability computations. Default is 10.
+    interp_fun : str, optional
+        Interpolation function for parameter assignment. Default is "rbf".
+    models : str or object
+        Path to evolutionary track data or preloaded model data. Default is './PARSEC/'.
+    correct_extinction : bool, optional
+        Whether to apply extinction correction to color and magnitude data. Default is True.
+    reddening_key : str, optional
+        Key in `sources` for stellar reddening data. Default is "av".
+    color_excess_key : str, optional
+        Key in `sources` for color excess data. Default is "e_bv".
+    use_reddening_key : bool, optional
+        Whether to interpret `reddening_key` or use the `color_excess_key` directly for extinction
+        correction. Default is True.
+    kwargs : dict, optional
+        Additional keyword arguments passed to underlying functions for isochrone calculation,
+        parameter assignment, or extinction correction.
 
     Returns
     -------
-    param_mean : array_like
-        Estimated parameter mean for each of stars.
-    param_error : array_like
-        Estimated parameter standard deviation for each of stars.
+    output : list
+        Output list containing results from parameter assignment and/or excess probability
+        calculation. The structure of output depends on the parameters provided:
+        - If `assign_param` is not None, returns its mean and error.
+        - If `get_excess` is not None, includes the excess probability.
     """
 
     log = init_log(time.strftime("%Y%m%d_%H%M%S", time.gmtime()), config_file=None)
@@ -327,13 +381,13 @@ def multirun(sources, vals=[5, 0], params=("age", "mh"), track_type="isotrack", 
 
     if track_type == "isotrack":
         log.info("Using isotrack...")
-        tracks = get_isotrack(models, vals, params=params, return_table=True, sort_by="age",
+        tracks = get_isotrack(models, vals, params=params, return_table=True,
                               color_filter1=color_filter1, color_filter2=color_filter2, mag_filter=mag_filter, **kwargs)
     else:
         log.error(f"Using {track_type} not yet implemented!")
 
     # calculate color and magnitude uncertainties
-    if (mag_filter == "G") & (color_filter1 == "BP") & (color_filter2 == "RP"):
+    if (mag_filter == "G") & (color_filter1 == "G_BP") & (color_filter2 == "G_RP"):
         if ~("mg" in sources.colnames):
             # calculate the absolute magnitude in G band
             sources["mg"] = sources["phot_g_mean_mag"] + 5 * np.log10(sources["parallax"]) - 10
