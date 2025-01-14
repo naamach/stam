@@ -92,7 +92,7 @@ def assign_param(x, xerror, y, yerror, tracks, n_realizations=10,
     for i in iterations:  # for each gaia source
         try:
             mean = [x[i], y[i]]
-            cov = [[xerror[i], 0], [0, yerror[i]]]
+            cov = [[xerror[i]**2, 0], [0, yerror[i]**2]]
     
             points = np.random.multivariate_normal(mean, cov, size=n_realizations)
     
