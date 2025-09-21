@@ -10,5 +10,5 @@ build:
   commands:
   - pip install -r docs/requirements.txt
   - pip install .
-  - sphinx-build -b html docs/source docs/_build/html
+  - sphinx-build -b html docs/source "$READTHEDOCS_OUTPUT/html"
 
