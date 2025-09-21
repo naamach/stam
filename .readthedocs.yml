@@ -10,4 +10,12 @@ build:
   commands:
     - pip install -r docs/requirements.txt
     - sphinx-build -b html docs/source docs/_build/html
+build:
+  image: latest
+  os: ubuntu-22.04
+  tools:
+    python: "3.8"
+  commands:
+    - pip install -r docs/requirements.txt
+    - sphinx-build -b html docs/source docs/_build/html
 
