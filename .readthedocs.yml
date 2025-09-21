@@ -11,3 +11,6 @@ python:
 build:
   image: latest
   os: ubuntu-22.04
+  commands:
+    - pip install -r docs/requirements.txt
+    - sphinx-build -b html docs/source docs/_build/html
