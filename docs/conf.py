@@ -1,7 +1,10 @@
 # Configuration file for the Sphinx documentation builder.
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+# Add the repository root (parent directory of docs/) to sys.path so Sphinx can import the package.
+HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
 
 project = 'STAM'
 author = "Na'ama Hallakoun"
