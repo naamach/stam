@@ -4,6 +4,9 @@ API Reference
 .. autosummary::
    :toctree: .
 
+   index
+   readme
+   api
    stam.assign
    stam.colorline
    stam.gaia
