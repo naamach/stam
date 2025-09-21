@@ -1,0 +1,14 @@
+MANIFEST
+dist
+*.pyc
+*.pyo
+*.db
+*~
+._*
+*.egg-info
+*.egg
+ivo*
+*.ini
+build*
+.idea
+__pycache__

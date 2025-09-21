@@ -1,0 +1,784 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stam.gentracks &mdash; STAM 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2709fde1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            STAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stam.gentracks</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stam.gentracks</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">gaussian_filter1d</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">matplotlib.path</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">.getmodels</span> <span class="kn">import</span> <span class="n">colname</span>
+
+
+<div class="viewcode-block" id="get_isotrack">
+<a class="viewcode-back" href="../../stam.gentracks.get_isotrack.html#stam.gentracks.get_isotrack">[docs]</a>
+<span class="k">def</span> <span class="nf">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;mh&quot;</span><span class="p">),</span>
+                 <span class="n">mass_res</span><span class="o">=</span><span class="mf">0.007</span><span class="p">,</span> <span class="n">absmag_res</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sort_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">mass_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">absmag_min</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">absmag_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">age_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">age_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">mh_min</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">mh_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                 <span class="n">stage_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stage_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">color_filter1</span><span class="o">=</span><span class="s2">&quot;G_BPmag&quot;</span><span class="p">,</span> <span class="n">color_filter2</span><span class="o">=</span><span class="s2">&quot;G_RPmag&quot;</span><span class="p">,</span>
+                 <span class="n">mag_filter</span><span class="o">=</span><span class="s2">&quot;Gmag&quot;</span><span class="p">,</span> <span class="n">return_idx</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_table</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_isotrack(models, vals, params=(&quot;mass&quot;, &quot;mh&quot;),</span>
+<span class="sd">                 mass_res=0.007, absmag_res=0.01, age_res=0.1, log_age_res=0.05, mh_res=0.05, stage=1, sort_by=None,</span>
+<span class="sd">                 mass_min=0, mass_max=np.inf, absmag_min=-np.inf, absmag_max=np.inf, age_min=0, age_max=np.inf, mh_min=-np.inf, mh_max=np.inf,</span>
+<span class="sd">                 stage_min=0, stage_max=np.inf, color_filter1=&quot;G_BPmag&quot;, color_filter2=&quot;G_RPmag&quot;,</span>
+<span class="sd">                 mag_filter=&quot;Gmag&quot;, return_idx=False, return_table=False)</span>
+
+<span class="sd">    Get a specific stellar evolution track, with two out of four parameters fixed (mass, age, metallicity, absmag).</span>
+<span class="sd">    NOTE: This function doesn&#39;t interpolate between tracks, just return all tracks within the mass/age/metallicity/absmag bins.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    vals : array_like (of length 2)</span>
+<span class="sd">        Values of the fixed parameters (units: [mass] = Msun, [age] = Gyr, [mh] = dex).</span>
+<span class="sd">    params : tuple (of length 2), optional</span>
+<span class="sd">        Fixed parameters names (default: (&quot;mass&quot;, &quot;mh&quot;)).</span>
+<span class="sd">    mass_res : float, optional</span>
+<span class="sd">        Mass resolution, in Msun (default: 0.007 Msun). If negative - treat as fractional.</span>
+<span class="sd">    absmag_res : float, optional</span>
+<span class="sd">        Absolute magnitude resolution, in mag (default: 0.01 mag). If negative - treat as fractional.</span>
+<span class="sd">    age_res : float, optional</span>
+<span class="sd">        Age resolution, in Gyr (default: 0.1 Gyr). If negative - treat as fractional.</span>
+<span class="sd">    log_age_res : float, optional</span>
+<span class="sd">        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).</span>
+<span class="sd">    mh_res : float, optional</span>
+<span class="sd">        Metallicity resolution, in dex (default: 0.05 dex)</span>
+<span class="sd">    stage : int, optional</span>
+<span class="sd">        Stellar evolution stage label (None = don&#39;t select a specific stage, 0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    mass_min : float, optional</span>
+<span class="sd">        Minimum mass to consider, in Msun (if no fixed mass was chosen; default: 0 Msun).</span>
+<span class="sd">    mass_max : float, optional</span>
+<span class="sd">        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1 Msun).</span>
+<span class="sd">    absmag_min : float, optional</span>
+<span class="sd">        Minimum absolute magnitude to consider, in mag (if no fixed absolute magnitude was chosen; default: `-np.inf`).</span>
+<span class="sd">    absmag_max : float, optional</span>
+<span class="sd">        Maximum absolute magnitude to consider, in mag (if no fixed absolute magnitude was chosen; default: `np.inf`).</span>
+<span class="sd">    age_min : float, optional</span>
+<span class="sd">        Minimum age to consider, in Gyr (if no fixed age was chosen; default: 0 Gyr).</span>
+<span class="sd">    age_max : float, optional</span>
+<span class="sd">        Maximum age to consider, in Gyr (if no fixed age was chosen; default: `np.inf` Gyr).</span>
+<span class="sd">    mh_min : float, optional</span>
+<span class="sd">        Minimum [M/H] to consider, in dex (if no fixed metallicity was chosen; default: `-np.inf`).</span>
+<span class="sd">    mh_max : float, optional</span>
+<span class="sd">        Maximum [M/H] to consider, in dex (if no fixed metallicity was chosen; default: `np.inf`).</span>
+<span class="sd">    stage_min : int, optional</span>
+<span class="sd">        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).</span>
+<span class="sd">    stage_max : int, optional</span>
+<span class="sd">        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).</span>
+<span class="sd">    color_filter1 : str, optional</span>
+<span class="sd">        Bluer band to use for the color calculation (default: `G_BPmag`).</span>
+<span class="sd">    color_filter2 : str, optional</span>
+<span class="sd">        Redder band to use for the color calculation (default: `G_RPmag`).</span>
+<span class="sd">    mag_filter : str, optional</span>
+<span class="sd">        Which band to use for the magnitude axis (default: `Gmag`).</span>
+<span class="sd">    return_idx : bool, optional</span>
+<span class="sd">        If true, return also the indices of the relevant rows in `models` (default: False).</span>
+<span class="sd">    return_table : bool, optional</span>
+<span class="sd">        If true, return tracks in `astropy` `Table` format (default: False).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    color1 : array_like</span>
+<span class="sd">        Chosen stellar evolution track `color_filter1` magnitude</span>
+<span class="sd">    color2 : array_like</span>
+<span class="sd">        Chosen stellar evolution track `color_filter2` magnitude</span>
+<span class="sd">    absmag : array_like</span>
+<span class="sd">        Chosen stellar evolution track `mag_filter` absolute magnitude</span>
+<span class="sd">    mass : array_like</span>
+<span class="sd">        Chosen stellar evolution track mass, in Msun</span>
+<span class="sd">    mh : array_like</span>
+<span class="sd">        Chosen stellar evolution track metallicity ([M/H]), in dex</span>
+<span class="sd">    age : array_like</span>
+<span class="sd">        Chosen stellar evolution track age, in Gyr</span>
+<span class="sd">    idx : array_like</span>
+<span class="sd">        The indices of the relevant rows in `models` (if `return_idx=True`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;mass&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">mass_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># take nearest track</span>
+            <span class="n">masses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mass</span> <span class="o">-</span> <span class="n">masses</span><span class="p">))</span>
+            <span class="n">mass_idx</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="n">masses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">mass_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">mass_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">mass_res</span>
+            <span class="n">mass_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">mass</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mass_res</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">mass</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">mass_res</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mass_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">mass</span> <span class="o">-</span> <span class="n">mass_res</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">mass</span> <span class="o">+</span> <span class="n">mass_res</span><span class="p">))</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mass_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for mass </span><span class="si">{</span><span class="n">mass</span><span class="si">}</span><span class="s2">+/-</span><span class="si">{</span><span class="n">mass_res</span><span class="si">}</span><span class="s2"> Msun!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mass_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">mass_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">mass_res</span>
+            <span class="n">mass_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">mass_min</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mass_res</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">mass_max</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">mass_res</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mass_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">mass_min</span> <span class="o">-</span> <span class="n">mass_res</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">mass_max</span> <span class="o">+</span> <span class="n">mass_res</span><span class="p">)</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mass_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found in mass range </span><span class="si">{</span><span class="n">mass_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">mass_max</span><span class="si">}</span><span class="s2"> Msun!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;absmag&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">absmag</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;absmag&quot;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">absmag_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># take nearest track</span>
+            <span class="n">absmags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">absmag</span> <span class="o">-</span> <span class="n">absmags</span><span class="p">))</span>
+            <span class="n">absmag_idx</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span> <span class="o">==</span> <span class="n">absmags</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">absmag_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">absmag_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">absmag_res</span>
+            <span class="n">absmag_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">absmag</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">absmag_res</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">absmag</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">absmag_res</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">absmag_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">absmag</span> <span class="o">-</span> <span class="n">absmag_res</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">absmag</span> <span class="o">+</span> <span class="n">absmag_res</span><span class="p">))</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mass_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for absolute magnitude </span><span class="si">{</span><span class="n">absmag</span><span class="si">}</span><span class="s2">+/-</span><span class="si">{</span><span class="n">absmag_res</span><span class="si">}</span><span class="s2"> Msun!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">absmag_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">absmag_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">absmag_res</span>
+            <span class="n">absmag_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">absmag_min</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">absmag_res</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">absmag_max</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">absmag_res</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">absmag_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">absmag_min</span> <span class="o">-</span> <span class="n">absmag_res</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">absmag_max</span> <span class="o">+</span> <span class="n">absmag_res</span><span class="p">)</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mass_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found in absolute magnitude range </span><span class="si">{</span><span class="n">absmag_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">absmag_max</span><span class="si">}</span><span class="s2"> Msun!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;age&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">age</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">age_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># take nearest track</span>
+            <span class="n">ages</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span><span class="o">*</span><span class="mf">1e-9</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">age</span> <span class="o">-</span> <span class="n">ages</span><span class="p">))</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span><span class="o">*</span><span class="mf">1e-9</span> <span class="o">==</span> <span class="n">ages</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">age_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">age_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">age_res</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">age</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">age_res</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                      <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">age_res</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+            <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">age_idx</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for age </span><span class="si">{</span><span class="n">age</span><span class="si">}</span><span class="s2">Gyr+/-</span><span class="si">{</span><span class="n">age_res</span><span class="o">*</span><span class="mi">100</span><span class="si">}</span><span class="s2">%!&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">age</span> <span class="o">-</span> <span class="n">age_res</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                      <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age</span> <span class="o">+</span> <span class="n">age_res</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+            <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">age_idx</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for age </span><span class="si">{</span><span class="n">age</span><span class="si">}</span><span class="s2">+/-</span><span class="si">{</span><span class="n">age_res</span><span class="si">}</span><span class="s2"> Gyr!&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s2">&quot;log_age&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">log_age</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">age_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># take nearest track</span>
+            <span class="n">log_ages</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">log_age</span> <span class="o">-</span> <span class="n">log_ages</span><span class="p">))</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="n">log_ages</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">log_age</span> <span class="o">-</span> <span class="n">log_age_res</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                      <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">log_age</span> <span class="o">+</span> <span class="n">log_age_res</span><span class="p">))</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">age_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for log(age) </span><span class="si">{</span><span class="n">log_age</span><span class="si">}</span><span class="s2">+/-</span><span class="si">{</span><span class="n">log_age_res</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">age_res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># treat as fractional</span>
+            <span class="n">age_res</span> <span class="o">=</span> <span class="o">-</span><span class="n">age_res</span>
+            <span class="n">age_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age_min</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">age_res</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                      <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age_max</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">age_res</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">age_min</span> <span class="o">&gt;</span> <span class="n">age_res</span><span class="p">:</span>
+                <span class="n">age_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age_min</span> <span class="o">-</span> <span class="n">age_res</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                          <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age_max</span> <span class="o">+</span> <span class="n">age_res</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># usually relevant to the pre-MS stage</span>
+                <span class="n">age_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">age_min</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> \
+                          <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="n">age_max</span> <span class="o">+</span> <span class="n">age_res</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e9</span><span class="p">))</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">age_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found in age range </span><span class="si">{</span><span class="n">age_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">age_max</span><span class="si">}</span><span class="s2"> Gyr!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;mh&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">mh</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">mh_res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># take nearest track</span>
+            <span class="n">mhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mh</span> <span class="o">-</span> <span class="n">mhs</span><span class="p">))</span>
+            <span class="n">mh_idx</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="n">mhs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mh_idx</span> <span class="o">=</span> <span class="p">((</span><span class="n">mh</span> <span class="o">-</span> <span class="n">mh_res</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">mh</span> <span class="o">+</span> <span class="n">mh_res</span><span class="p">))</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mh_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for metallicity </span><span class="si">{</span><span class="n">mh</span><span class="si">}</span><span class="s2">+/-</span><span class="si">{</span><span class="n">mh_res</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mh_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">mh_min</span> <span class="o">-</span> <span class="n">mh_res</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">mh_max</span> <span class="o">+</span> <span class="n">mh_res</span><span class="p">)</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mh_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found in metallicity range </span><span class="si">{</span><span class="n">mh_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">mh_max</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">stage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stage_idx</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;phase&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="n">stage</span>  <span class="c1"># 1 = main sequence</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">stage_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found for stage </span><span class="si">{</span><span class="n">stage</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stage_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">stage_min</span> <span class="o">&lt;=</span> <span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;phase&quot;</span><span class="p">)])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;phase&quot;</span><span class="p">)]</span> <span class="o">&lt;=</span> <span class="n">stage_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">stage_idx</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No tracks found in stage range </span><span class="si">{</span><span class="n">stage_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">stage_max</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">mass_idx</span> <span class="o">&amp;</span> <span class="n">absmag_idx</span> <span class="o">&amp;</span> <span class="n">age_idx</span> <span class="o">&amp;</span> <span class="n">mh_idx</span> <span class="o">&amp;</span> <span class="n">stage_idx</span>
+
+    <span class="n">color1</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="n">color_filter1</span><span class="p">)]</span>
+    <span class="n">color2</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="n">color_filter2</span><span class="p">)]</span>
+    <span class="n">absmag</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="n">mag_filter</span><span class="p">)]</span>
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;m0&quot;</span><span class="p">)]</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;mh&quot;</span><span class="p">)]</span>
+    <span class="n">age</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;log_age&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mf">1e-9</span>  <span class="c1"># [Gyr]</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="n">colname</span><span class="p">(</span><span class="s2">&quot;phase&quot;</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="n">sort_by</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;mass&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;age&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;mh&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mh</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sort_by</span> <span class="o">==</span> <span class="s2">&quot;mass&quot;</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sort_by</span> <span class="o">==</span> <span class="s2">&quot;age&quot;</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sort_by</span> <span class="o">==</span> <span class="s2">&quot;mh&quot;</span><span class="p">:</span>
+            <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mh</span><span class="p">)</span>
+    <span class="n">color1</span> <span class="o">=</span> <span class="n">color1</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">color2</span> <span class="o">=</span> <span class="n">color2</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">absmag</span> <span class="o">=</span> <span class="n">absmag</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">mass</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">mh</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">age</span> <span class="o">=</span> <span class="n">age</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">return_table</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">Table</span><span class="p">([</span><span class="n">mass</span><span class="p">,</span> <span class="n">color1</span> <span class="o">-</span> <span class="n">color2</span><span class="p">,</span> <span class="n">absmag</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">age</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;mass&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">,</span> <span class="s1">&#39;absmag&#39;</span><span class="p">,</span> <span class="s1">&#39;mh&#39;</span><span class="p">,</span> <span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">color1</span><span class="p">,</span> <span class="n">color2</span><span class="p">,</span> <span class="n">absmag</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">stage</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">return_idx</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+
+<div class="viewcode-block" id="get_pre_ms_isomass">
+<a class="viewcode-back" href="../../stam.gentracks.get_pre_ms_isomass.html#stam.gentracks.get_pre_ms_isomass">[docs]</a>
+<span class="k">def</span> <span class="nf">get_pre_ms_isomass</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">is_smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">smooth_sigma</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_pre_ms_isomass(models, mass, mh, is_smooth=True, smooth_sigma=3, **kwargs)</span>
+
+<span class="sd">    Get a specific stellar evolution pre-MS track, with fixed mass and metallicity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    mass : float</span>
+<span class="sd">        Stellar track mass, in Msun</span>
+<span class="sd">    mh : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]), in dex</span>
+<span class="sd">    is_smooth : bool, optional</span>
+<span class="sd">        Smooth the stellar track? (default: True).</span>
+<span class="sd">    smooth_sigma : float, optional</span>
+<span class="sd">        Smoothing Gaussian sigma (default: 3).</span>
+<span class="sd">    kwargs : optional</span>
+<span class="sd">        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bp_rp : array_like</span>
+<span class="sd">        Chosen stellar evolution track Gaia Gbp-Grp color.</span>
+<span class="sd">    mg : array_like</span>
+<span class="sd">        Chosen stellar evolution track Gaia G magnitude.</span>
+<span class="sd">    age : array_like</span>
+<span class="sd">        Chosen stellar evolution track age, in Gyr.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">bp</span><span class="p">,</span> <span class="n">rp</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">stage</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">mass</span><span class="p">,</span> <span class="n">mh</span><span class="p">],</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;mh&quot;</span><span class="p">),</span> <span class="n">stage</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_smooth</span><span class="p">:</span>
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bp</span> <span class="o">-</span> <span class="n">rp</span><span class="p">),</span> <span class="n">smooth_sigma</span><span class="p">)</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">smooth_sigma</span><span class="p">)</span>
+
+        <span class="c1"># remove transition to MS part</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">),</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mass</span> <span class="o">-</span> <span class="mf">0.6</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>  <span class="c1"># fix plot wobble</span>
+            <span class="n">idx</span> <span class="o">-=</span> <span class="mi">30</span>
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">bp_rp</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">mg</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">age</span> <span class="o">=</span> <span class="n">age</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bp</span> <span class="o">-</span> <span class="n">rp</span><span class="p">)</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">stage</span></div>
+
+
+
+<div class="viewcode-block" id="get_combined_isomass">
+<a class="viewcode-back" href="../../stam.gentracks.get_combined_isomass.html#stam.gentracks.get_combined_isomass">[docs]</a>
+<span class="k">def</span> <span class="nf">get_combined_isomass</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">mh_pre_ms</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">is_smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">smooth_sigma</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_combined_isomass(models, mass, age, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3, **kwargs)</span>
+
+<span class="sd">    Get a specific stellar evolution track, combining a pre-MS track with fixed mass and metallicity, and an MS track</span>
+<span class="sd">    with fixed mass and age.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    mass : float</span>
+<span class="sd">        Stellar track mass, in Msun.</span>
+<span class="sd">    age : float</span>
+<span class="sd">        MS stellar track age, in Gyr.</span>
+<span class="sd">    mh_pre_ms : float, optional</span>
+<span class="sd">        Pre-MS stellar track metallicity ([M/H]), in dex (default: 0.7 dex).</span>
+<span class="sd">    is_smooth : bool, optional</span>
+<span class="sd">        Smooth the stellar track? (default: True).</span>
+<span class="sd">    smooth_sigma : float, optional</span>
+<span class="sd">        Smoothing Gaussian sigma (default: 3).</span>
+<span class="sd">    kwargs : optional</span>
+<span class="sd">        Any additional keyword arguments to be passed to `stam.tracks.get_isotrack`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bp_rp : array_like</span>
+<span class="sd">        Chosen stellar evolution track Gaia Gbp-Grp color.</span>
+<span class="sd">    mg : array_like</span>
+<span class="sd">        Chosen stellar evolution track Gaia G magnitude.</span>
+<span class="sd">    mh : array_like</span>
+<span class="sd">        Chosen stellar evolution track metallicity, in dex.</span>
+<span class="sd">    age_vec : array_like</span>
+<span class="sd">        Chosen stellar evolution track age, in Gyr.</span>
+<span class="sd">    ms_idx : array_like (bool)</span>
+<span class="sd">        Indices of MS points on track.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get MS track (fixed mass and age)</span>
+    <span class="n">bp</span><span class="p">,</span> <span class="n">rp</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stage</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="p">],</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">),</span> <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># sort by metallicity</span>
+    <span class="n">sort_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">mh</span><span class="p">)</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">rp</span> <span class="o">=</span> <span class="n">rp</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">mh</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span><span class="p">[</span><span class="n">sort_idx</span><span class="p">]</span>
+
+    <span class="c1"># get pre-MS track (fixed mass and metallicity)</span>
+    <span class="n">bp_rp0</span><span class="p">,</span> <span class="n">mg0</span><span class="p">,</span> <span class="n">age0</span><span class="p">,</span> <span class="n">stage0</span> <span class="o">=</span> <span class="n">get_pre_ms_isomass</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">mh_pre_ms</span><span class="p">,</span> <span class="n">is_smooth</span><span class="o">=</span><span class="n">is_smooth</span><span class="p">,</span>
+                                                   <span class="n">smooth_sigma</span><span class="o">=</span><span class="n">smooth_sigma</span><span class="p">,</span>
+                                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># combine MS and pre-MS tracks</span>
+    <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bp</span> <span class="o">-</span> <span class="n">rp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">bp_rp0</span><span class="p">))</span>
+    <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">mg0</span><span class="p">))</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mh</span><span class="p">,</span> <span class="n">mh_pre_ms</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mg0</span><span class="p">)))</span>
+    <span class="n">age_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">age</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bp</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">age0</span><span class="p">))</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">stage0</span><span class="p">))</span>
+    <span class="c1"># ms_idx = np.ones_like(bp_rp, dtype=bool)  # main sequence</span>
+    <span class="c1"># ms_idx[len(bp):] = False</span>
+
+    <span class="k">if</span> <span class="n">is_smooth</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">mass</span> <span class="o">!=</span> <span class="mf">0.15</span><span class="p">):</span>
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">smooth_sigma</span><span class="p">)</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">mg</span><span class="p">,</span> <span class="n">smooth_sigma</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">age_vec</span><span class="p">,</span> <span class="n">stage</span></div>
+
+
+
+<div class="viewcode-block" id="get_isomasses">
+<a class="viewcode-back" href="../../stam.gentracks.get_isomasses.html#stam.gentracks.get_isomasses">[docs]</a>
+<span class="k">def</span> <span class="nf">get_isomasses</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="n">age</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, **kwargs)</span>
+
+<span class="sd">    Get fixed-age stellar evolution tracks, for a range of masses.</span>
+<span class="sd">    If the `stage` keyword is not specified (under `kwargs`), it assumes `stage=1` (MS phase).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    mass : array_like, optional</span>
+<span class="sd">        Stellar track mass array, in Msun (default: `np.arange(0.1, 1.2, 0.1)` Msun).</span>
+<span class="sd">    age : float, optional</span>
+<span class="sd">        Stellar track age, in Gyr (default: 5 Gyr).</span>
+<span class="sd">    kwargs : optional</span>
+<span class="sd">        Any additional keyword arguments to be passed to `stam.gentracks.get_isotrack`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tracks : Table</span>
+<span class="sd">        Stellar evolution tracks, for the given age and range of masses, with columns `mass`, `bp_rp`, `mg`, and `mh`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">m_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mass</span><span class="p">:</span>
+        <span class="n">bp</span><span class="p">,</span> <span class="n">rp</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">curr_mh</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">curr_stage</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">age</span><span class="p">],</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bp</span> <span class="o">-</span> <span class="n">rp</span><span class="p">]))</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+        <span class="n">mh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mh</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_mh</span><span class="p">))</span>
+        <span class="n">stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_stage</span><span class="p">))</span>
+        <span class="n">m_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m_vec</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">)))</span>
+    <span class="n">age_vec</span> <span class="o">=</span> <span class="n">age</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m_vec</span><span class="p">))</span>
+
+    <span class="n">tracks</span> <span class="o">=</span> <span class="n">Table</span><span class="p">([</span><span class="n">m_vec</span><span class="p">,</span> <span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">age_vec</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;mass&#39;</span><span class="p">,</span> <span class="s1">&#39;bp_rp&#39;</span><span class="p">,</span> <span class="s1">&#39;mg&#39;</span><span class="p">,</span> <span class="s1">&#39;mh&#39;</span><span class="p">,</span> <span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">tracks</span></div>
+
+
+
+<div class="viewcode-block" id="get_combined_isomasses">
+<a class="viewcode-back" href="../../stam.gentracks.get_combined_isomasses.html#stam.gentracks.get_combined_isomasses">[docs]</a>
+<span class="k">def</span> <span class="nf">get_combined_isomasses</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="n">age</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">mh_pre_ms</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">is_smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">smooth_sigma</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                           <span class="n">exclude_pre_ms_masses</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_combined_isomasses(models, mass=np.arange(0.1, 1.2, 0.1), age=5, mh_pre_ms=0.7, is_smooth=True, smooth_sigma=3,</span>
+<span class="sd">                           **kwargs)</span>
+
+<span class="sd">    Get combined stellar evolution tracks, for a range of masses. Each track combines a pre-MS track with fixed mass</span>
+<span class="sd">    and metallicity, and an MS track with fixed mass and age.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    mass : array_like, optional</span>
+<span class="sd">        Stellar track mass array, in Msun (default: `np.arange(0.1, 1.2, 0.1)` Msun).</span>
+<span class="sd">    age : float, optional</span>
+<span class="sd">        Stellar track age, in Gyr (default: 5 Gyr).</span>
+<span class="sd">    mh_pre_ms : float, optional</span>
+<span class="sd">        Pre-MS stellar track metallicity ([M/H]), in dex (default: 0.7 dex).</span>
+<span class="sd">    is_smooth : bool, optional</span>
+<span class="sd">        Smooth the stellar track? (default: True).</span>
+<span class="sd">    smooth_sigma : float, optional</span>
+<span class="sd">        Smoothing Gaussian sigma (default: 3).</span>
+<span class="sd">    exclude_pre_ms_masses : array_like, optional</span>
+<span class="sd">        List of pre-main-sequence mass tracks to exclude (to avoid interpolation artifacts; default: []).</span>
+<span class="sd">    kwargs : optional</span>
+<span class="sd">        Any additional keyword arguments to be passed to `stam.gentracks.get_isotrack`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tracks : Table</span>
+<span class="sd">        Stellar evolution tracks, for the given age and range of masses, with columns `mass`, `bp_rp`, `mg`, and `mh`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">m_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">age_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">mh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="n">stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mass</span><span class="p">:</span>
+        <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">exclude_pre_ms_masses</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-4</span><span class="p">):</span>
+            <span class="n">curr_bp_rp</span><span class="p">,</span> <span class="n">curr_mg</span><span class="p">,</span> <span class="n">curr_mh</span><span class="p">,</span> <span class="n">curr_age</span><span class="p">,</span> <span class="n">curr_stage</span> <span class="o">=</span> <span class="n">get_combined_isomass</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span>
+                                                                                      <span class="n">mh_pre_ms</span><span class="o">=</span><span class="n">mh_pre_ms</span><span class="p">,</span>
+                                                                                      <span class="n">is_smooth</span><span class="o">=</span><span class="n">is_smooth</span><span class="p">,</span>
+                                                                                      <span class="n">smooth_sigma</span><span class="o">=</span><span class="n">smooth_sigma</span><span class="p">,</span>
+                                                                                      <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">curr_age</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_age</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># don&#39;t take the pre-MS track for this mass</span>
+            <span class="n">curr_bp</span><span class="p">,</span> <span class="n">curr_rp</span><span class="p">,</span> <span class="n">curr_mg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">curr_mh</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">curr_stage</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">age</span><span class="p">],</span>
+                                                                                <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">curr_bp_rp</span> <span class="o">=</span> <span class="n">curr_bp</span> <span class="o">-</span> <span class="n">curr_rp</span>
+            <span class="n">curr_age</span> <span class="o">=</span> <span class="n">age</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">curr_mg</span><span class="p">))</span>
+
+        <span class="n">bp_rp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">curr_bp_rp</span><span class="p">]))</span>
+        <span class="n">mg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_mg</span><span class="p">))</span>
+        <span class="n">mh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mh</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_mh</span><span class="p">))</span>
+        <span class="n">stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_stage</span><span class="p">))</span>
+        <span class="n">m_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m_vec</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">curr_mg</span><span class="p">)))</span>
+        <span class="n">age_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">age_vec</span><span class="p">,</span> <span class="n">curr_age</span><span class="p">)</span>
+
+    <span class="n">tracks</span> <span class="o">=</span> <span class="n">Table</span><span class="p">([</span><span class="n">m_vec</span><span class="p">,</span> <span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">age_vec</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;mass&#39;</span><span class="p">,</span> <span class="s1">&#39;bp_rp&#39;</span><span class="p">,</span> <span class="s1">&#39;mg&#39;</span><span class="p">,</span> <span class="s1">&#39;mh&#39;</span><span class="p">,</span> <span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">tracks</span></div>
+
+
+
+<div class="viewcode-block" id="get_isochrone_polygon">
+<a class="viewcode-back" href="../../stam.gentracks.get_isochrone_polygon.html#stam.gentracks.get_isochrone_polygon">[docs]</a>
+<span class="k">def</span> <span class="nf">get_isochrone_polygon</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">age1</span><span class="p">,</span> <span class="n">mh1</span><span class="p">,</span> <span class="n">age2</span><span class="p">,</span> <span class="n">mh2</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="mf">0.007</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+                          <span class="n">stage1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stage2</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bp_rp_min</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_shift1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bp_rp_shift2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                          <span class="n">mg_shift1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mg_shift2</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_isochrone_polygon(models, age1, mh1, age2, mh2, age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,</span>
+<span class="sd">                          stage1=1, stage2=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift1=0, bp_rp_shift2=0,</span>
+<span class="sd">                          mg_shift1=0, mg_shift2=0)</span>
+
+<span class="sd">    Get the polygon enclosed by two isochrones.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    age1 : float, optional</span>
+<span class="sd">        Stellar track age of the first track, in Gyr.</span>
+<span class="sd">    mh1 : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]) of the first track, in dex.</span>
+<span class="sd">    age2 : float, optional</span>
+<span class="sd">        Stellar track age of the second track, in Gyr.</span>
+<span class="sd">    mh2 : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]) of the second track, in dex.</span>
+<span class="sd">    age_res : float, optional</span>
+<span class="sd">        Age resolution, in Gyr (default: 0.001 Gyr). If negative - treat as fractional.</span>
+<span class="sd">    log_age_res : float, optional</span>
+<span class="sd">        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).</span>
+<span class="sd">    mh_res : float, optional</span>
+<span class="sd">        Metallicity resolution, in dex (default: 0.05 dex).</span>
+<span class="sd">    mass_res : float, optional</span>
+<span class="sd">        Mass resolution, in Msun (default: 0.007 Msun).</span>
+<span class="sd">    mass_max : float, optional</span>
+<span class="sd">        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).</span>
+<span class="sd">    stage1 : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the first track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    stage2 : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the second track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    bp_rp_min : float, optional</span>
+<span class="sd">        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).</span>
+<span class="sd">    bp_rp_max : float, optional</span>
+<span class="sd">        Maximal Gaia Gbp-Grp color to consider (default: np.inf).</span>
+<span class="sd">    bp_rp_shift1 : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the first track (default: 0).</span>
+<span class="sd">    bp_rp_shift2 : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the second track (default: 0).</span>
+<span class="sd">    mg_shift1 : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the first track (default: 0).</span>
+<span class="sd">    mg_shift2 : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the second track (default: 0).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    polygon : Path object</span>
+<span class="sd">        The polygon enclosed by the two stellar evolutionary tracks.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">BP1</span><span class="p">,</span> <span class="n">RP1</span><span class="p">,</span> <span class="n">G1</span><span class="p">,</span> <span class="n">mass1</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">age1</span><span class="p">,</span> <span class="n">mh1</span><span class="p">],</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;mh&quot;</span><span class="p">),</span>
+                                       <span class="n">mass_max</span><span class="o">=</span><span class="n">mass_max</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="n">age_res</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="n">log_age_res</span><span class="p">,</span>
+                                       <span class="n">mh_res</span><span class="o">=</span><span class="n">mh_res</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="n">mass_res</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage1</span><span class="p">)[:</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">BP2</span><span class="p">,</span> <span class="n">RP2</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">mass2</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">age2</span><span class="p">,</span> <span class="n">mh2</span><span class="p">],</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;mh&quot;</span><span class="p">),</span>
+                                       <span class="n">mass_max</span><span class="o">=</span><span class="n">mass_max</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="n">age_res</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="n">log_age_res</span><span class="p">,</span>
+                                       <span class="n">mh_res</span><span class="o">=</span><span class="n">mh_res</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="n">mass_res</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="n">stage2</span><span class="p">)[:</span><span class="mi">4</span><span class="p">]</span>
+
+    <span class="n">BP_RP1</span> <span class="o">=</span> <span class="n">BP1</span> <span class="o">-</span> <span class="n">RP1</span> <span class="o">+</span> <span class="n">bp_rp_shift1</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">bp_rp_min</span> <span class="o">&lt;=</span> <span class="n">BP_RP1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">BP_RP1</span> <span class="o">&lt;=</span> <span class="n">bp_rp_max</span><span class="p">)</span>
+    <span class="n">BP_RP1</span> <span class="o">=</span> <span class="n">BP_RP1</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">G1</span> <span class="o">=</span> <span class="n">G1</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">mg_shift1</span>
+    <span class="n">mass1</span> <span class="o">=</span> <span class="n">mass1</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="n">BP_RP2</span> <span class="o">=</span> <span class="n">BP2</span> <span class="o">-</span> <span class="n">RP2</span> <span class="o">+</span> <span class="n">bp_rp_shift2</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">bp_rp_min</span> <span class="o">&lt;=</span> <span class="n">BP_RP2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">BP_RP2</span> <span class="o">&lt;=</span> <span class="n">bp_rp_max</span><span class="p">)</span>
+    <span class="n">BP_RP2</span> <span class="o">=</span> <span class="n">BP_RP2</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">G2</span> <span class="o">=</span> <span class="n">G2</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">mg_shift2</span>
+    <span class="n">mass2</span> <span class="o">=</span> <span class="n">mass2</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">BP_RP1</span><span class="p">,</span> <span class="n">G1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">BP_RP2</span><span class="p">,</span> <span class="n">G2</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)))</span>
+
+    <span class="n">polygon</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">polygon</span><span class="p">,</span> <span class="n">BP_RP1</span><span class="p">,</span> <span class="n">G1</span><span class="p">,</span> <span class="n">mass1</span><span class="p">,</span> <span class="n">BP_RP2</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">mass2</span></div>
+
+
+
+<div class="viewcode-block" id="get_isochrone_side">
+<a class="viewcode-back" href="../../stam.gentracks.get_isochrone_side.html#stam.gentracks.get_isochrone_side">[docs]</a>
+<span class="k">def</span> <span class="nf">get_isochrone_side</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;mh&quot;</span><span class="p">),</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="mf">0.007</span><span class="p">,</span> <span class="n">mass_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+                       <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stage_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stage_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_min</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">bp_rp_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mg_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="n">is_extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color_filter1</span><span class="o">=</span><span class="s2">&quot;G_BPmag&quot;</span><span class="p">,</span> <span class="n">color_filter2</span><span class="o">=</span><span class="s2">&quot;G_RPmag&quot;</span><span class="p">,</span> <span class="n">mag_filter</span><span class="o">=</span><span class="s2">&quot;Gmag&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_isochrone_side(models, age, mh, side=&quot;blue&quot;, age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,</span>
+<span class="sd">                       stage=1, bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0)</span>
+
+<span class="sd">    Get the polygon enclosed by one side of an evolutionary track.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    vals : array_like (of length 2)</span>
+<span class="sd">        Values of the fixed parameters (units: [mass] = Msun, [age] = Gyr, [mh] = dex).</span>
+<span class="sd">    params : tuple (of length 2), optional</span>
+<span class="sd">        Fixed parameters names (default: (&quot;age&quot;, &quot;mh&quot;)).</span>
+<span class="sd">    side : str, optional (default: &quot;blue&quot;)</span>
+<span class="sd">        Which side of the track to include (&quot;blue&quot;/&quot;red&quot;).</span>
+<span class="sd">    age_res : float, optional</span>
+<span class="sd">        Age resolution, in Gyr (default: 0.001 Gyr). If negative - treat as fractional.</span>
+<span class="sd">    log_age_res : float, optional</span>
+<span class="sd">        log(age/yr) resolution, in dex, if using `log_age` as one of the `params` (default: 0.05 dex).</span>
+<span class="sd">    mh_res : float, optional</span>
+<span class="sd">        Metallicity resolution, in dex (default: 0.05 dex).</span>
+<span class="sd">    mass_res : float, optional</span>
+<span class="sd">        Mass resolution, in Msun (default: 0.007 Msun).</span>
+<span class="sd">    mass_max : float, optional</span>
+<span class="sd">        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).</span>
+<span class="sd">    stage : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    stage_min : int, optional</span>
+<span class="sd">        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).</span>
+<span class="sd">    stage_max : int, optional</span>
+<span class="sd">        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).</span>
+<span class="sd">    bp_rp_min : float, optional</span>
+<span class="sd">        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).</span>
+<span class="sd">    bp_rp_max : float, optional</span>
+<span class="sd">        Maximal Gaia Gbp-Grp color to consider (default: np.inf).</span>
+<span class="sd">    bp_rp_shift : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the track (default: 0).</span>
+<span class="sd">    mg_shift : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the track (default: 0).</span>
+<span class="sd">    is_extrapolate : bool, optional</span>
+<span class="sd">        Whether to extrapolate the massive part of the isochrone (default: True).</span>
+<span class="sd">    color_filter1 : str, optional</span>
+<span class="sd">        Bluer band to use for the color calculation (default: `G_BPmag`).</span>
+<span class="sd">    color_filter2 : str, optional</span>
+<span class="sd">        Redder band to use for the color calculation (default: `G_RPmag`).</span>
+<span class="sd">    mag_filter : str, optional</span>
+<span class="sd">        Which band to use for the magnitude axis (default: `Gmag`).</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    polygon : Path object</span>
+<span class="sd">        The polygon enclosed by one side of an evolutionary track.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">BP</span><span class="p">,</span> <span class="n">RP</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">mass</span> <span class="o">=</span> <span class="n">get_isotrack</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+                                   <span class="n">mass_min</span><span class="o">=</span><span class="n">mass_min</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="n">mass_max</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="n">age_res</span><span class="p">,</span> <span class="n">log_age_res</span><span class="o">=</span><span class="n">log_age_res</span><span class="p">,</span>
+                                   <span class="n">mh_res</span><span class="o">=</span><span class="n">mh_res</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="n">mass_res</span><span class="p">,</span>
+                                   <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">stage_min</span><span class="o">=</span><span class="n">stage_min</span><span class="p">,</span> <span class="n">stage_max</span><span class="o">=</span><span class="n">stage_max</span><span class="p">,</span>
+                                   <span class="n">color_filter1</span><span class="o">=</span><span class="n">color_filter1</span><span class="p">,</span> <span class="n">color_filter2</span><span class="o">=</span><span class="n">color_filter2</span><span class="p">,</span> <span class="n">mag_filter</span><span class="o">=</span><span class="n">mag_filter</span><span class="p">)[:</span><span class="mi">4</span><span class="p">]</span>
+
+    <span class="n">BP_RP</span> <span class="o">=</span> <span class="n">BP</span> <span class="o">-</span> <span class="n">RP</span> <span class="o">+</span> <span class="n">bp_rp_shift</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">bp_rp_min</span> <span class="o">&lt;=</span> <span class="n">BP_RP</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">BP_RP</span> <span class="o">&lt;=</span> <span class="n">bp_rp_max</span><span class="p">)</span>
+    <span class="n">BP_RP</span> <span class="o">=</span> <span class="n">BP_RP</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">mg_shift</span>
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">mass</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">is_extrapolate</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">G</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">G</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:][</span><span class="n">idx</span><span class="p">],</span> <span class="n">BP_RP</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:][</span><span class="n">idx</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">extra_point</span> <span class="o">=</span> <span class="n">p</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">BP_RP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">BP_RP</span><span class="p">,</span> <span class="n">extra_point</span><span class="p">])</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">G</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+
+    <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;blue&quot;</span><span class="p">:</span>
+        <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">BP_RP</span><span class="p">,</span> <span class="n">G</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">G</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">G</span><span class="p">)]])</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">side</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;red&quot;</span><span class="p">:</span>
+        <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">BP_RP</span><span class="p">,</span> <span class="n">G</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">G</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">G</span><span class="p">)]])</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unimplemented side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+    <span class="n">polygon</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">polygon</span><span class="p">,</span> <span class="n">BP_RP</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">mass</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

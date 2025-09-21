@@ -1,0 +1,617 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stam.gaia &mdash; STAM 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2709fde1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            STAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stam.gaia</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stam.gaia</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">erf</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="kn">from</span> <span class="nn">matplotlib.path</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">.gentracks</span> <span class="kn">import</span> <span class="n">get_isotrack</span><span class="p">,</span> <span class="n">get_isochrone_polygon</span><span class="p">,</span> <span class="n">get_isochrone_side</span>
+<span class="kn">from</span> <span class="nn">.plot</span> <span class="kn">import</span> <span class="n">plot_cmd</span><span class="p">,</span> <span class="n">plot_track</span>
+
+
+<div class="viewcode-block" id="calc_bp_rp_uncertainty">
+<a class="viewcode-back" href="../../stam.gaia.calc_bp_rp_uncertainty.html#stam.gaia.calc_bp_rp_uncertainty">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_bp_rp_uncertainty</span><span class="p">(</span><span class="n">gaia</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_bp_rp_uncertainty(gaia)</span>
+
+<span class="sd">    Calculate the Gaia Gbp-Grp color uncertainty.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bp_rp_error : array_like</span>
+<span class="sd">        Gaia Gbp-Grp uncertainty.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bp_rp_error</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="mi">1</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;phot_bp_mean_flux_over_error&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;phot_rp_mean_flux_over_error&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">bp_rp_error</span></div>
+
+
+
+<div class="viewcode-block" id="calc_mg_uncertainty">
+<a class="viewcode-back" href="../../stam.gaia.calc_mg_uncertainty.html#stam.gaia.calc_mg_uncertainty">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_mg_uncertainty</span><span class="p">(</span><span class="n">gaia</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_mg_uncertainty(gaia)</span>
+
+<span class="sd">    Calculate the Gaia G-band absolute magnitude uncertainty.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    mg_error : array_like</span>
+<span class="sd">        Gaia G-band absolute magnitude uncertainty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mg_error</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="mi">1</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;phot_g_mean_flux_over_error&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;parallax_over_error&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mg_error</span></div>
+
+
+
+<div class="viewcode-block" id="calc_color_uncertainty">
+<a class="viewcode-back" href="../../stam.gaia.calc_color_uncertainty.html#stam.gaia.calc_color_uncertainty">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_color_uncertainty</span><span class="p">(</span><span class="n">gaia</span><span class="p">,</span> <span class="n">color_filter1</span><span class="o">=</span><span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="n">color_filter2</span><span class="o">=</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">photsystem</span><span class="o">=</span><span class="s2">&quot;sdss&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_color_uncertainty(gaia, color_filter1=&quot;u&quot;, color_filter2=&quot;z&quot;, photsystem=&quot;sdss&quot;)</span>
+
+<span class="sd">    Calculate the Gaia color uncertainty in arbitrary colors, using data from the `gaiadr3.synthetic_photometry_gspc`</span>
+<span class="sd">    table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+<span class="sd">    color_filter1 : str, optional</span>
+<span class="sd">        Bluer band to use for the color calculation (default: `u`).</span>
+<span class="sd">    color_filter2 : str, optional</span>
+<span class="sd">        Redder band to use for the color calculation (default: `z`).</span>
+<span class="sd">    mag_filter : str, optional</span>
+<span class="sd">        Which band to use for the magnitude axis (default: `Gmag`).</span>
+<span class="sd">    photsystem : str, optional</span>
+<span class="sd">        The photometric system of the filters (default: `sdss`).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    color_error : array_like</span>
+<span class="sd">        Gaia uncertainty of the selected color.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">color_error</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">color_filter1</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux_error&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">color_filter1</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+        <span class="p">(</span><span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">color_filter2</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux_error&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">color_filter2</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">color_error</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absmag_uncertainty">
+<a class="viewcode-back" href="../../stam.gaia.calc_absmag_uncertainty.html#stam.gaia.calc_absmag_uncertainty">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absmag_uncertainty</span><span class="p">(</span><span class="n">gaia</span><span class="p">,</span> <span class="n">mag_filter</span><span class="o">=</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="n">photsystem</span><span class="o">=</span><span class="s2">&quot;sdss&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_absmag_uncertainty(gaia)</span>
+
+<span class="sd">    Calculate the Gaia absolute magnitude uncertainty in an arbitrary band, using data from the `gaiadr3.synthetic_photometry_gspc`</span>
+<span class="sd">    table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+<span class="sd">    mag_filter : str, optional</span>
+<span class="sd">        Which band to use for the magnitude axis (default: `g`).</span>
+<span class="sd">    photsystem : str, optional</span>
+<span class="sd">        The photometric system of the filters (default: `sdss`).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    mg_error : array_like</span>
+<span class="sd">        Gaia absolute magnitude uncertainty in the selected band.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">absmag_error</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mag_filter</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux_error&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mag_filter</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">photsystem</span><span class="si">}</span><span class="s1">_flux&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;parallax_over_error&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">absmag_error</span></div>
+
+
+
+<div class="viewcode-block" id="calc_extinction">
+<a class="viewcode-back" href="../../stam.gaia.calc_extinction.html#stam.gaia.calc_extinction">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_extinction</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">parallax</span><span class="p">,</span> <span class="n">z_sun</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">sigma_dust</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">R_G</span><span class="o">=</span><span class="mf">2.740</span><span class="p">,</span> <span class="n">R_BP</span><span class="o">=</span><span class="mf">3.374</span><span class="p">,</span> <span class="n">R_RP</span><span class="o">=</span><span class="mf">2.035</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_extinction(b, parallax, z_sun=1.4, sigma_dust=150, R_G=2.740, R_BP=3.374, R_RP=2.035)</span>
+
+<span class="sd">    Calculate the extinction and reddening, based on Galactic latitude and distance, using eq. 2 of Sollima (2019):</span>
+<span class="sd">    https://ui.adsabs.harvard.edu/abs/2019MNRAS.489.2377S/abstract</span>
+<span class="sd">    R coefficients from Casagrande &amp; VandenBerg (2018), table 2:</span>
+<span class="sd">    https://ui.adsabs.harvard.edu/abs/2018MNRAS.479L.102C/abstract</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    b : array_like</span>
+<span class="sd">        Galactic latitude, in deg.</span>
+<span class="sd">    parallax : array_like</span>
+<span class="sd">        Parallax, in mas.</span>
+<span class="sd">    z_sun : float, optional</span>
+<span class="sd">        Sun&#39;s height above the Galactic plane, in pc (default: 1.4 pc).</span>
+<span class="sd">    sigma_dust : float, optional</span>
+<span class="sd">        The Gaussian distribution sigma of the Galactic dust, in pc (default: 150 pc).</span>
+<span class="sd">    R_G : float, optional</span>
+<span class="sd">        Gaia G-band extinction coefficient (default: 2.740).</span>
+<span class="sd">    R_BP : float, optional</span>
+<span class="sd">        Gaia Gbp-band extinction coefficient (default: 3.374).</span>
+<span class="sd">    R_RP : float, optional</span>
+<span class="sd">        Gaia Grp-band extinction coefficient (default: 2.035).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    e_bprp : array_like</span>
+<span class="sd">        Reddening in the Gaia bands, E(Gbp-Grp).</span>
+<span class="sd">    A_G : array_like</span>
+<span class="sd">        Gaia G-band extinction, A_G = R_G * E(Gbp-Grp).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sin_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+    <span class="n">e_bv</span> <span class="o">=</span> <span class="mf">0.03</span> <span class="o">/</span> <span class="n">sin_b</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">erf</span><span class="p">((</span><span class="n">sin_b</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">parallax</span> <span class="o">+</span> <span class="n">z_sun</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma_dust</span><span class="p">)</span> <span class="o">-</span> <span class="n">erf</span><span class="p">(</span><span class="n">z_sun</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma_dust</span><span class="p">))</span>
+    <span class="n">A_G</span> <span class="o">=</span> <span class="n">e_bv</span> <span class="o">*</span> <span class="n">R_G</span>
+    <span class="n">e_bprp</span> <span class="o">=</span> <span class="p">(</span><span class="n">R_BP</span> <span class="o">-</span> <span class="n">R_RP</span><span class="p">)</span> <span class="o">*</span> <span class="n">e_bv</span>
+
+    <span class="k">return</span> <span class="n">e_bprp</span><span class="p">,</span> <span class="n">A_G</span></div>
+
+
+
+<div class="viewcode-block" id="calc_gaia_extinction">
+<a class="viewcode-back" href="../../stam.gaia.calc_gaia_extinction.html#stam.gaia.calc_gaia_extinction">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_gaia_extinction</span><span class="p">(</span><span class="n">gaia</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_gaia_extinction(gaia, **kwargs)</span>
+
+<span class="sd">    Calculate the extinction and reddening for all the sources in the Gaia table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+<span class="sd">    kwargs : optional</span>
+<span class="sd">        Any additional keyword arguments to be passed to `stam.gaia.calc_extinction`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    e_bprp : array_like</span>
+<span class="sd">        Reddening in the Gaia bands, E(Gbp-Grp).</span>
+<span class="sd">    A_G : array_like</span>
+<span class="sd">        Gaia G-band extinction, A_G = R_G * E(Gbp-Grp).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">e_bprp</span><span class="p">,</span> <span class="n">A_G</span> <span class="o">=</span> <span class="n">calc_extinction</span><span class="p">(</span><span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">gaia</span><span class="p">[</span><span class="s1">&#39;parallax&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">e_bprp</span><span class="p">,</span> <span class="n">A_G</span></div>
+
+
+
+<div class="viewcode-block" id="get_extinction_in_band">
+<a class="viewcode-back" href="../../stam.gaia.get_extinction_in_band.html#stam.gaia.get_extinction_in_band">[docs]</a>
+<span class="k">def</span> <span class="nf">get_extinction_in_band</span><span class="p">(</span><span class="n">e_bv</span><span class="p">,</span> <span class="n">mag_filter</span><span class="o">=</span><span class="s2">&quot;Gmag&quot;</span><span class="p">,</span> <span class="n">color_filter1</span><span class="o">=</span><span class="s2">&quot;G_BPmag&quot;</span><span class="p">,</span> <span class="n">color_filter2</span><span class="o">=</span><span class="s2">&quot;G_RPmag&quot;</span><span class="p">,</span>
+                           <span class="n">R_G</span><span class="o">=</span><span class="mf">2.740</span><span class="p">,</span> <span class="n">R_BP</span><span class="o">=</span><span class="mf">3.374</span><span class="p">,</span> <span class="n">R_RP</span><span class="o">=</span><span class="mf">2.035</span><span class="p">,</span> <span class="n">R_V</span><span class="o">=</span><span class="mf">3.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_extinction_in_band(e_bv, R_G=2.740, R_BP=3.374, R_RP=2.035)</span>
+
+<span class="sd">    Convert the extinction and reddening to the selected bands.</span>
+
+<span class="sd">    Gaia band R coefficients from Casagrande &amp; VandenBerg (2018), table 2:</span>
+<span class="sd">    https://ui.adsabs.harvard.edu/abs/2018MNRAS.479L.102C/abstract</span>
+
+<span class="sd">    Johnson-Cousins bands R coefficients from Munari and Carraro (1996), table 2 (assuming Rv=3.1):</span>
+<span class="sd">    https://ui.adsabs.harvard.edu/abs/1996A%26A...314..108M/abstract</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    e_bv : float</span>
+<span class="sd">        The E(B-V) value in mag.</span>
+<span class="sd">    mag_filter : str, optional</span>
+<span class="sd">        The main band (default: &quot;Gmag&quot;).</span>
+<span class="sd">    color_filter1 : str, optional</span>
+<span class="sd">        The first color band (default: &quot;G_BPmag&quot;).</span>
+<span class="sd">    color_filter2 : str, optional</span>
+<span class="sd">        The second color band (default: &quot;G_RPmag&quot;).</span>
+<span class="sd">    R_G : float, optional</span>
+<span class="sd">    R_BP : float, optional</span>
+<span class="sd">    R_RP : float, optional</span>
+<span class="sd">    R_V : float, optional</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    excess : array_like</span>
+<span class="sd">        Reddening (color excess) in the selected color, e.g. E(BP-RP).</span>
+<span class="sd">    A : array_like</span>
+<span class="sd">        Extinction in the selected main band, e.g. A_G.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">mag_filter</span> <span class="o">==</span> <span class="s2">&quot;Gmag&quot;</span><span class="p">:</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">e_bv</span> <span class="o">*</span> <span class="n">R_G</span>
+    <span class="k">elif</span> <span class="n">mag_filter</span> <span class="o">==</span> <span class="s2">&quot;V&quot;</span><span class="p">:</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">e_bv</span> <span class="o">*</span> <span class="n">R_V</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="sa">f</span><span class="s2">&quot;Extinction in </span><span class="si">{</span><span class="n">mag_filter</span><span class="si">}</span><span class="s2">-band not implemented!&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">color_filter1</span> <span class="o">==</span> <span class="s2">&quot;G_BPmag&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">color_filter2</span> <span class="o">==</span> <span class="s2">&quot;G_RPmag&quot;</span><span class="p">):</span>
+        <span class="n">excess</span> <span class="o">=</span> <span class="p">(</span><span class="n">R_BP</span> <span class="o">-</span> <span class="n">R_RP</span><span class="p">)</span> <span class="o">*</span> <span class="n">e_bv</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">color_filter1</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">color_filter2</span> <span class="o">==</span> <span class="s2">&quot;I&quot;</span><span class="p">):</span>
+        <span class="n">excess</span> <span class="o">=</span> <span class="mf">2.25</span> <span class="o">*</span> <span class="n">e_bv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="sa">f</span><span class="s2">&quot;Reddening in </span><span class="si">{</span><span class="n">color_filter1</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">color_filter2</span><span class="si">}</span><span class="s2"> not implemented!&quot;</span>
+
+    <span class="k">return</span> <span class="n">excess</span><span class="p">,</span> <span class="n">A</span></div>
+
+
+
+<div class="viewcode-block" id="read_gaia_data">
+<a class="viewcode-back" href="../../stam.gaia.read_gaia_data.html#stam.gaia.read_gaia_data">[docs]</a>
+<span class="k">def</span> <span class="nf">read_gaia_data</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    read_gaia_data(file)</span>
+
+<span class="sd">    Read Gaia table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file : str</span>
+<span class="sd">        Gaia file name (including path). Should be a `*.FITS` file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hdul</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="n">gaia</span> <span class="o">=</span> <span class="n">hdul</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="k">return</span> <span class="n">gaia</span></div>
+
+
+
+<div class="viewcode-block" id="get_gaia_subsample">
+<a class="viewcode-back" href="../../stam.gaia.get_gaia_subsample.html#stam.gaia.get_gaia_subsample">[docs]</a>
+<span class="k">def</span> <span class="nf">get_gaia_subsample</span><span class="p">(</span><span class="n">gaia</span><span class="p">,</span> <span class="n">sample_settings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_gaia_subsample(gaia, sample_settings)</span>
+
+<span class="sd">    Get a Gaia subsample based on tangential velocity and distance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gaia : FITS table</span>
+<span class="sd">        Gaia table.</span>
+<span class="sd">    sample_settings : dict</span>
+<span class="sd">        The subsample settings: a dictionary including keywords &quot;vmin&quot;, &quot;vmax&quot;, and &quot;dist&quot;;</span>
+<span class="sd">        specifying the transverse velocity limits (in km/s) and the maximal distance (in pc).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    gaia_idx : array_like</span>
+<span class="sd">        Row indices of Gaia sources included in the subsample</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># tangential velocity</span>
+    <span class="n">gaia_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">sample_settings</span><span class="p">[</span><span class="s2">&quot;vmin&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">gaia</span><span class="p">[</span><span class="s2">&quot;v_tan&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">gaia</span><span class="p">[</span><span class="s2">&quot;v_tan&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">sample_settings</span><span class="p">[</span><span class="s2">&quot;vmax&quot;</span><span class="p">])</span>
+
+    <span class="c1"># maximum distance</span>
+    <span class="k">if</span> <span class="n">sample_settings</span><span class="p">[</span><span class="s2">&quot;dist&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">within_dist</span> <span class="o">=</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">gaia</span><span class="p">[</span><span class="s2">&quot;parallax&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">sample_settings</span><span class="p">[</span><span class="s2">&quot;dist&quot;</span><span class="p">]</span>
+        <span class="n">gaia_idx</span> <span class="o">=</span> <span class="n">gaia_idx</span> <span class="o">&amp;</span> <span class="n">within_dist</span>
+
+    <span class="n">gaia_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">gaia_idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">gaia_idx</span></div>
+
+
+
+<div class="viewcode-block" id="get_gaia_isochrone_subsample">
+<a class="viewcode-back" href="../../stam.gaia.get_gaia_isochrone_subsample.html#stam.gaia.get_gaia_isochrone_subsample">[docs]</a>
+<span class="k">def</span> <span class="nf">get_gaia_isochrone_subsample</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">age1</span><span class="p">,</span> <span class="n">mh1</span><span class="p">,</span> <span class="n">age2</span><span class="p">,</span> <span class="n">mh2</span><span class="p">,</span>
+                                 <span class="n">age_res</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="mf">0.007</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+                                 <span class="n">stage1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stage2</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bp_rp_min</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                                 <span class="n">bp_rp_shift1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bp_rp_shift2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mg_shift1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mg_shift2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                 <span class="n">is_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_gaia_isochrone_subsample(bp_rp, mg, models, age1, mh1, age2, mh2,</span>
+<span class="sd">                                 age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,</span>
+<span class="sd">                                 stage1=1, stage2=1, bp_rp_min=-np.inf, bp_rp_max=np.inf,</span>
+<span class="sd">                                 bp_rp_shift1=0, bp_rp_shift2=0, mg_shift1=0, mg_shift2=0,</span>
+<span class="sd">                                 is_plot=False, title=None, ax=None)</span>
+
+<span class="sd">    Get the polygon enclosed by two isochrones.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bp_rp : array_like</span>
+<span class="sd">        Gaia Gbp-Grp color.</span>
+<span class="sd">    mg : array_like</span>
+<span class="sd">        Gaia G-band absolute magnitude (same size as `bp_rp`).</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    age1 : float, optional</span>
+<span class="sd">        Stellar track age of the first track, in Gyr.</span>
+<span class="sd">    mh1 : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]) of the first track, in dex.</span>
+<span class="sd">    age2 : float, optional</span>
+<span class="sd">        Stellar track age of the second track, in Gyr.</span>
+<span class="sd">    mh2 : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]) of the second track, in dex.</span>
+<span class="sd">    age_res : float, optional</span>
+<span class="sd">        Age resolution, in Gyr (default: 0.001 Gyr).</span>
+<span class="sd">    mh_res : float, optional</span>
+<span class="sd">        Metallicity resolution, in dex (default: 0.05 dex).</span>
+<span class="sd">    mass_res : float, optional</span>
+<span class="sd">        Mass resolution, in Msun (default: 0.007 Msun).</span>
+<span class="sd">    mass_max : float, optional</span>
+<span class="sd">        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).</span>
+<span class="sd">    stage1 : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the first track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    stage2 : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the second track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    bp_rp_min : float, optional</span>
+<span class="sd">        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).</span>
+<span class="sd">    bp_rp_max : float, optional</span>
+<span class="sd">        Maximal Gaia Gbp-Grp color to consider (default: np.inf).</span>
+<span class="sd">    bp_rp_shift1 : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the first track (default: 0).</span>
+<span class="sd">    bp_rp_shift2 : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the second track (default: 0).</span>
+<span class="sd">    mg_shift1 : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the first track (default: 0).</span>
+<span class="sd">    mg_shift2 : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the second track (default: 0).</span>
+<span class="sd">    is_plot: bool, optional</span>
+<span class="sd">        Plot Gaia CMD with highlighted region? (default: False).</span>
+<span class="sd">    title: str, optional</span>
+<span class="sd">        Plot title (default: None).</span>
+<span class="sd">    ax : Axes object, optional</span>
+<span class="sd">        Matplotlib Axes in which to plot (default: None).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    idx : array_like</span>
+<span class="sd">        Row indices of Gaia sources inside the subsample polygon.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">polygon</span><span class="p">,</span> <span class="n">BP_RP1</span><span class="p">,</span> <span class="n">G1</span><span class="p">,</span> <span class="n">mass1</span><span class="p">,</span> <span class="n">BP_RP2</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">mass2</span> <span class="o">=</span> <span class="n">get_isochrone_polygon</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">age1</span><span class="p">,</span> <span class="n">mh1</span><span class="p">,</span> <span class="n">age2</span><span class="p">,</span> <span class="n">mh2</span><span class="p">,</span>
+                                                                          <span class="n">age_res</span><span class="o">=</span><span class="n">age_res</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="n">mh_res</span><span class="p">,</span>
+                                                                          <span class="n">mass_max</span><span class="o">=</span><span class="n">mass_max</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="n">mass_res</span><span class="p">,</span>
+                                                                          <span class="n">stage1</span><span class="o">=</span><span class="n">stage1</span><span class="p">,</span> <span class="n">stage2</span><span class="o">=</span><span class="n">stage2</span><span class="p">,</span>
+                                                                          <span class="n">bp_rp_min</span><span class="o">=</span><span class="n">bp_rp_min</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="n">bp_rp_max</span><span class="p">,</span>
+                                                                          <span class="n">bp_rp_shift1</span><span class="o">=</span><span class="n">bp_rp_shift1</span><span class="p">,</span>
+                                                                          <span class="n">bp_rp_shift2</span><span class="o">=</span><span class="n">bp_rp_shift2</span><span class="p">,</span>
+                                                                          <span class="n">mg_shift1</span><span class="o">=</span><span class="n">mg_shift1</span><span class="p">,</span> <span class="n">mg_shift2</span><span class="o">=</span><span class="n">mg_shift2</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">contains_points</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> Gaia sources left out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_plot</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_cmd</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plot_cmd</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">PathPatch</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;tab:red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+
+        <span class="n">plot_track</span><span class="p">(</span><span class="n">BP_RP1</span><span class="p">,</span> <span class="n">G1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[M/H]=</span><span class="si">{</span><span class="n">mh1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">plot_track</span><span class="p">(</span><span class="n">BP_RP2</span><span class="p">,</span> <span class="n">G2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[M/H]=</span><span class="si">{</span><span class="n">mh2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">idx</span></div>
+
+
+
+<div class="viewcode-block" id="get_gaia_isochrone_side_subsample">
+<a class="viewcode-back" href="../../stam.gaia.get_gaia_isochrone_side_subsample.html#stam.gaia.get_gaia_isochrone_side_subsample">[docs]</a>
+<span class="k">def</span> <span class="nf">get_gaia_isochrone_side_subsample</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+                                      <span class="n">age_res</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="mf">0.007</span><span class="p">,</span> <span class="n">mass_max</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+                                      <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stage_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stage_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
+                                      <span class="n">bp_rp_min</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">bp_rp_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mg_shift</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                      <span class="n">is_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get_gaia_isochrone_side_subsample(bp_rp, mg, models, age, mh, side=&quot;blue&quot;,</span>
+<span class="sd">                                      age_res=0.001, mh_res=0.05, mass_res=0.007, mass_max=1.2,</span>
+<span class="sd">                                      stage=1, stage_min=0, stage_max=np.inf,</span>
+<span class="sd">                                      bp_rp_min=-np.inf, bp_rp_max=np.inf, bp_rp_shift=0, mg_shift=0,</span>
+<span class="sd">                                      is_plot=False, title=None, ax=None)</span>
+
+<span class="sd">    Get the subsample of one side of an evolutionary track.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bp_rp : array_like</span>
+<span class="sd">        Gaia Gbp-Grp color.</span>
+<span class="sd">    mg : array_like</span>
+<span class="sd">        Gaia G-band absolute magnitude (same size as `bp_rp`).</span>
+<span class="sd">    models : Table</span>
+<span class="sd">        All stellar evolution models in a single astropy table, as retrieved by `stam.models.read_parsec`.</span>
+<span class="sd">    age : float, optional</span>
+<span class="sd">        Stellar track age of the track, in Gyr.</span>
+<span class="sd">    mh : float</span>
+<span class="sd">        Stellar track metallicity ([M/H]) of the track, in dex.</span>
+<span class="sd">    side : str, optional</span>
+<span class="sd">        Which side (&quot;blue&quot;/&quot;red&quot;) of the track to include (default: &quot;blue&quot;).</span>
+<span class="sd">    age_res : float, optional</span>
+<span class="sd">        Age resolution, in Gyr (default: 0.001 Gyr).</span>
+<span class="sd">    mh_res : float, optional</span>
+<span class="sd">        Metallicity resolution, in dex (default: 0.05 dex).</span>
+<span class="sd">    mass_res : float, optional</span>
+<span class="sd">        Mass resolution, in Msun (default: 0.007 Msun).</span>
+<span class="sd">    mass_max : float, optional</span>
+<span class="sd">        Maximum mass to consider, in Msun (if no fixed mass was chosen; default: 1.2 Msun).</span>
+<span class="sd">    stage : int, optional</span>
+<span class="sd">        Stellar evolution stage label of the track (0 = pre-MS, 1 = MS, etc.; default: 1).</span>
+<span class="sd">    stage_min : int, optional</span>
+<span class="sd">        Minimum stellar evolution stage label to consider (if no fixed stage was chosen; default: 0).</span>
+<span class="sd">    stage_max : int, optional</span>
+<span class="sd">        Maximum stellar evolution stage label to consider (if no fixed stage was chosen; default: `np.inf`).</span>
+<span class="sd">    bp_rp_min : float, optional</span>
+<span class="sd">        Minimal Gaia Gbp-Grp color to consider (default: -np.inf).</span>
+<span class="sd">    bp_rp_max : float, optional</span>
+<span class="sd">        Maximal Gaia Gbp-Grp color to consider (default: np.inf).</span>
+<span class="sd">    bp_rp_shift : float, optional</span>
+<span class="sd">        How much to shift the Gaia Gbp-Grp color of the track (default: 0).</span>
+<span class="sd">    mg_shift : float, optional</span>
+<span class="sd">        How much to shift the Gaia G-band of the track (default: 0).</span>
+<span class="sd">    is_plot: bool, optional</span>
+<span class="sd">        Plot Gaia CMD with highlighted region? (default: False).</span>
+<span class="sd">    title: str, optional</span>
+<span class="sd">        Plot title (default: None).</span>
+<span class="sd">    ax : Axes object, optional</span>
+<span class="sd">        Matplotlib Axes in which to plot (default: None).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    idx : array_like</span>
+<span class="sd">        Row indices of Gaia sources inside the subsample polygon.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">polygon</span><span class="p">,</span> <span class="n">BP_RP</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">mass</span> <span class="o">=</span> <span class="n">get_isochrone_side</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">mh</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">age_res</span><span class="o">=</span><span class="n">age_res</span><span class="p">,</span> <span class="n">mh_res</span><span class="o">=</span><span class="n">mh_res</span><span class="p">,</span>
+                                                 <span class="n">mass_max</span><span class="o">=</span><span class="n">mass_max</span><span class="p">,</span> <span class="n">mass_res</span><span class="o">=</span><span class="n">mass_res</span><span class="p">,</span>
+                                                 <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">stage_min</span><span class="o">=</span><span class="n">stage_min</span><span class="p">,</span> <span class="n">stage_max</span><span class="o">=</span><span class="n">stage_max</span><span class="p">,</span>
+                                                 <span class="n">bp_rp_min</span><span class="o">=</span><span class="n">bp_rp_min</span><span class="p">,</span> <span class="n">bp_rp_max</span><span class="o">=</span><span class="n">bp_rp_max</span><span class="p">,</span> <span class="n">bp_rp_shift</span><span class="o">=</span><span class="n">bp_rp_shift</span><span class="p">,</span>
+                                                 <span class="n">mg_shift</span><span class="o">=</span><span class="n">mg_shift</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">contains_points</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> Gaia sources left out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">idx</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_plot</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_cmd</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plot_cmd</span><span class="p">(</span><span class="n">bp_rp</span><span class="p">,</span> <span class="n">mg</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">PathPatch</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;tab:red&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+
+        <span class="n">plot_track</span><span class="p">(</span><span class="n">BP_RP</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[M/H]=</span><span class="si">{</span><span class="n">mh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">idx</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
