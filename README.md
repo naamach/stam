@@ -1,5 +1,7 @@
 # STAM
 
+[![Documentation Status](https://readthedocs.org/projects/stam/badge/?version=latest)](https://stam.readthedocs.io/en/latest/)
+
 **Stellar-Track-based Assignment of Mass (STAM)** is a `python` package that assigns mass, metallicity, or age, to stars based on their location on the Hertzsprung-Russell diagram (color-magnitude diagram), using stellar evolutionary tracks (not provided by this package).
 
 The package has been tested for _Gaia_ DR2 sub-solar main-sequence stars, using [PARSEC evolutionary tracks](http://stev.oapd.inaf.it/cgi-bin/cmd).
