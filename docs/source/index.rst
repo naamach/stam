@@ -13,10 +13,6 @@ For a quick start, see the :doc:`README <readme>`.
 .. toctree::
    :maxdepth: 2
 
-   index
-   readme
-   api
-
 API
 ==================
 
