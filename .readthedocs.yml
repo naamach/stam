@@ -8,6 +8,7 @@ build:
   tools:
     python: "3.8"
   commands:
-    - pip install -r docs/requirements.txt
-    - sphinx-build -b html docs/source docs/_build/html
+  - pip install -r docs/requirements.txt
+  - pip install .
+  - sphinx-build -b html docs/source docs/_build/html
 
