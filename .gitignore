@@ -12,3 +12,4 @@ ivo*
 build*
 .idea
 __pycache__
+docs/_build
